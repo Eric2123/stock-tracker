@@ -848,7 +848,6 @@ import sys
 #     else:
 #         st.info("No news available for sentiment analysis.")
 
-!streamlit run app.py
 
 """I've added a new cell with the corrected command to run your Streamlit app.
 
