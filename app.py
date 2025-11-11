@@ -114,7 +114,7 @@ final_df['Absolute Current Price (%)'].min()
 from google.colab import files
 files.download("BSE_Final_Output.csv")
 
-!pip install squarify
+
 
 final_df.head(10)
 
@@ -317,21 +317,19 @@ def top_losers(df):
 
 top_losers(final_df)
 
-pip install streamlit
 
 import streamlit as st
 
 final_df.head(1)
 
-!pip install xlsxwriter
+
 
 import sys
-!{sys.executable} -m pip install xlsxwriter
 
-!pip install reportlab
+
+
 
 import sys
-!{sys.executable} -m pip install reportlab
 
 
 
@@ -859,27 +857,6 @@ pip install gnews textblob
 #         st.info("No news available for sentiment analysis.")
 
 !streamlit run app.py
-
-!pip install streamlit pyngrok -q
-
-from pyngrok import ngrok
-!ngrok config add-authtoken 33PKuaVyF68SS9UhkCW1sID0m4Z_7rb5ShhKeMZmdETgYebpz
-
-
-
-import subprocess
-subprocess.Popen(["streamlit", "run", "app.py", "--server.port", "8501", "--server.headless=true"])
-
-
-public_url = ngrok.connect(8501)
-print(public_url)
-
-import subprocess
-subprocess.Popen(["streamlit", "run", "app.py", "--server.port", "8501", "--server.headless=true"])
-
-from pyngrok import ngrok
-public_url = ngrok.connect(8501)
-print(public_url)
 
 """I've added a new cell with the corrected command to run your Streamlit app.
 
