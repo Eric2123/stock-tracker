@@ -322,18 +322,10 @@ import streamlit as st
 
 final_df.head(1)
 
-
+import sys
 
 import sys
 
-
-
-
-import sys
-
-
-
-pip install gnews textblob
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%writefile app.py
