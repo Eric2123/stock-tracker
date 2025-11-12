@@ -1,4 +1,4 @@
-# app.py - FINAL ULTIMATE VERSION - SIDEBAR STOCK SELECTION + PERFECT CONTRAST
+# app.py - ULTIMATE FINAL - LIVE TICKER + AUTO REFRESH + TARGET ALERTS
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -9,6 +9,10 @@ import plotly.express as px
 from datetime import datetime, timedelta
 from textblob import TextBlob
 from gnews import GNews
+import time
+
+# AUTO REFRESH EVERY 60 SECONDS
+st.autorefresh(interval=60_000, key="data_refresh")
 
 # ------------------- PAGE CONFIG -------------------
 st.set_page_config(page_title="Stock Tracker Pro", layout="wide", initial_sidebar_state="expanded")
@@ -19,6 +23,8 @@ st.markdown("""
 .main { padding: 1rem; }
 .metric-card { background-color: #f0f2f6; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 1rem 0; text-align: center; }
 .stButton>button { background-color: #1e88e5; color: white; border-radius: 8px; }
+.blink { animation: blink 1s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -43,6 +49,28 @@ plt.rcParams['xtick.color'] = fg_color
 plt.rcParams['ytick.color'] = fg_color
 plt.rcParams['axes.edgecolor'] = line_color
 
+# ------------------- LIVE TICKER IN SIDEBAR -------------------
+st.sidebar.markdown("### LIVE MARKET INDICES")
+nifty_ph = st.sidebar.empty()
+sensex_ph = st.sidebar.empty()
+
+@st.cache_data(ttl=10)  # Update every 10 seconds
+def get_live_indices():
+    try:
+        nifty = yf.Ticker("^NSEI").history(period="1d")["Close"].iloc[-1]
+        sensex = yf.Ticker("^BSESN").history(period="1d")["Close"].iloc[-1]
+        return round(nifty, 2), round(sensex, 2)
+    except:
+        return None, None
+
+nifty_price, sensex_price = get_live_indices()
+if nifty_price and sensex_price:
+    nifty_ph.metric("NIFTY 50", f"₹{nifty_price:,.0f}", delta="LIVE")
+    sensex_ph.metric("SENSEX", f"₹{sensex_price:,.0f}", delta="LIVE")
+else:
+    nifty_ph.warning("Fetching live data...")
+    sensex_ph.warning("Fetching live data...")
+
 # ------------------- PROCESS DATA -------------------
 @st.cache_data(show_spinner=False)
 def process_data(file):
@@ -50,7 +78,7 @@ def process_data(file):
     df = pd.read_excel(file, engine="openpyxl")
     df.columns = df.columns.str.strip()
 
-    required = ["Company Name", "Ticker", "Record Price", "Target Price", "Date of Publishing"]
+    required = ["Company Name", "Ticker", "Record Price", "Target Price", "Date of Auto Publishing"]
     if "Index" not in df.columns:
         df["Index"] = "Unknown"
     missing = [c for c in required if c not in df.columns]
@@ -177,6 +205,12 @@ with tab2:
             with st.container():
                 st.markdown(f"### {company}")
 
+                # TARGET HIT ALERT
+                if row["Current Price"] >= row["target Price"] * 0.95:
+                    st.error(f"TARGET ALMOST HIT! {company} is at ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}")
+                elif row["Current Price"] >= row["target Price"]:
+                    st.success(f"TARGET ACHIEVED! {company} HIT ₹{row['Current Price']:,}")
+
                 # Trend Chart
                 hist = yf.download(row["Ticker"], period="6mo")
                 if not hist.empty:
@@ -212,10 +246,10 @@ with tab2:
                     st.warning(f"No price data for {company}")
                 st.markdown("---")
 
+# [REST OF TAB3 AND TAB4 SAME AS BEFORE - NO CHANGE]
 with tab3:
     st.header("Performance Analysis")
     st.bar_chart(filtered.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
-
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Top 5 Gainers")
@@ -258,4 +292,4 @@ with tab4:
     except:
         st.warning("News not available")
 
-st.sidebar.success("SIDEBAR SELECTION + CONTRAST = PERFECT")
+st.sidebar.success("LIVE TICKER + AUTO REFRESH + TARGET ALERTS = GOD MODE")
