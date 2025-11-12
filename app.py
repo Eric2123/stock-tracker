@@ -126,25 +126,36 @@ st.success(f"Processed {len(df)} stocks!")
 csv = df.to_csv(index=False).encode()
 st.sidebar.download_button("Download CSV", csv, "results.csv", "text/csv")
 
-# PDF Download
 def create_pdf():
-    pdf = FPDF()
+    from fpdf import FPDF
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Arial', 'B', 12)
+            self.cell(0, 10, 'Stock Analysis Report', 0, 1, 'C')
+            self.ln(5)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('Arial', 'I', 8)
+            self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Stock Analysis Report", ln=1, align='C')
     pdf.set_font("Arial", size=10)
+
+    # Only safe ASCII characters
     for _, row in df.head(15).iterrows():
-        pdf.cell(200, 8, txt=f"{row['Company Name'][:30]:30} | ₹{row['Current Price']:6.1f} | Target ₹{row['target Price']:6.1f} | {row['Percent Change']:>+6.1f}%", ln=1)
+        name = row['Company Name']
+        if len(name) > 30:
+            name = name[:27] + "..."
+        # Remove ₹ and use plain text
+        line = f"{name:30} | Rs {row['Current Price']:6.1f} | Target Rs {row['target Price']:6.1f} | {row['Percent Change']:>+6.1f}%"
+        pdf.cell(200, 8, txt=line, ln=1)
+
     output = BytesIO()
-    pdf.output(output, dest='S')  # ← THIS IS THE FIX
+    pdf.output(output, dest='S')
     output.seek(0)
     return output.getvalue()
-
-st.sidebar.download_button(
-    label="Download PDF Report",
-    data=create_pdf(),
-    file_name="Stock_Report.pdf",
-    mime="application/pdf"
 )
 # ------------------- FILTERS -------------------
 period = st.sidebar.selectbox("Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
