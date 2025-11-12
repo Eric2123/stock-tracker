@@ -166,6 +166,18 @@ with tab1:
 
 with tab2:
     st.header("Stock Trends & Price Tracker")
+    # ADD THIS BLOCK - STOCK SELECTION IS BACK!
+st.subheader("Select Stocks to View")
+selected_companies = st.multiselect(
+    "Choose companies for trends & tracker",
+    options=df["Company Name"].unique(),
+    default=df["Company Name"].head(3).tolist()  # Default 3 stocks
+)
+
+if not selected_companies:
+    st.info("Select at least one company above ↑")
+    st.stop()
+THEN REPLACE THE
     company = st.selectbox("Select Company", df["Company Name"].unique(), key="trend_select")
     row = df[df["Company Name"] == company].iloc[0]
 
