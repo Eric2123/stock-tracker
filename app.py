@@ -124,7 +124,12 @@ st.success(f"Processed {len(df)} stocks!")
 
 # ------------------- DOWNLOADS -------------------
 csv = df.to_csv(index=False).encode()
-st.sidebar.download_button("Download CSV", csv, "results.csv", "text/csv")
+st.sidebar.download_button(
+    label="Download PDF Report",
+    data=create_pdf(),           # Call function live
+    file_name="Stock_Report.pdf",
+    mime="application/pdf"
+)
 
 def create_pdf():
     from fpdf import FPDF
