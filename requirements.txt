@@ -7,4 +7,4 @@ openpyxl
 numpy
 textblob
 gnews
-fpdf
+fpdf2
