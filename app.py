@@ -138,7 +138,7 @@ def create_pdf():
     output = BytesIO()
     pdf.output(output, dest='S')  # ← THIS IS THE FIX
     output.seek(0)
-    return output.getvalue())
+    return output.getvalue()
 
 st.sidebar.download_button(
     label="Download PDF Report",
