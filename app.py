@@ -69,7 +69,8 @@ if not uploaded_file:
 # Load data
 @st.cache_data
 def load_and_process_data(uploaded_file):
-    df = pd.read_excel(uploaded_file)
+    uploaded_file.seek(0)  # CRITICAL: Reset file pointer
+    df = pd.read_excel(uploaded_file, engine="openpyxl")
 
     # Convert Date of Publishing
     df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True)
