@@ -177,7 +177,6 @@ selected_companies = st.multiselect(
 if not selected_companies:
     st.info("Select at least one company above ↑")
     st.stop()
-THEN REPLACE THE
     company = st.selectbox("Select Company", df["Company Name"].unique(), key="trend_select")
     row = df[df["Company Name"] == company].iloc[0]
 
