@@ -140,7 +140,6 @@ def create_pdf():
     output.seek(0)
     return output.getvalue())
 
-pdf_data = create_pdf()
 st.sidebar.download_button(
     label="Download PDF Report",
     data=create_pdf(),
