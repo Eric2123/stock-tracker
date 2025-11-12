@@ -179,7 +179,7 @@ with tab2:
         ax.plot(hist.index, hist["Close"], label="Close Price", color="#00d4ff", linewidth=2.5)
         ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']}", alpha=0.9)
 
-        ax.grid(True, alpha=0.3感和, color=line_color)
+        ax.grid(True, alpha=0.3, color=line_color)
         for spine in ax.spines.values():
             spine.set_color(line_color)
 
