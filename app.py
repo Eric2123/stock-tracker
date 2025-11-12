@@ -161,7 +161,7 @@ def create_pdf():
     pdf.output(output, dest='S')
     output.seek(0)
     return output.getvalue()
-)
+
 # ------------------- FILTERS -------------------
 period = st.sidebar.selectbox("Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
 cutoff = datetime(1900,1,1)
