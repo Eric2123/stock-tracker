@@ -132,15 +132,21 @@ def create_pdf():
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     pdf.cell(200, 10, txt="Stock Analysis Report", ln=1, align='C')
-    for _, row in df.head(10).iterrows():
-        pdf.cell(200, 10, txt=f"{row['Company Name']} | Current: {row['Current Price']} | Target: {row['target Price']}", ln=1)
+    pdf.set_font("Arial", size=10)
+    for _, row in df.head(15).iterrows():
+        pdf.cell(200, 8, txt=f"{row['Company Name'][:30]:30} | ₹{row['Current Price']:6.1f} | Target ₹{row['target Price']:6.1f} | {row['Percent Change']:>+6.1f}%", ln=1)
     output = BytesIO()
-    pdf.output(output)
-    return output.getvalue()
+    pdf.output(output, dest='S')  # ← THIS IS THE FIX
+    output.seek(0)
+    return output.getvalue())
 
 pdf_data = create_pdf()
-st.sidebar.download_button("Download PDF Report", pdf_data, "report.pdf", "application/pdf")
-
+st.sidebar.download_button(
+    label="Download PDF Report",
+    data=create_pdf(),
+    file_name="Stock_Report.pdf",
+    mime="application/pdf"
+)
 # ------------------- FILTERS -------------------
 period = st.sidebar.selectbox("Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
 cutoff = datetime(1900,1,1)
