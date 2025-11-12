@@ -3,6 +3,7 @@ pandas==2.1.0
 yfinance==0.2.66
 numpy==1.26.0
 matplotlib
+seaborn
 plotly==5.16.0
 requests
 beautifulsoup4
