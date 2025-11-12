@@ -7,4 +7,3 @@ openpyxl
 numpy
 textblob
 gnews
-fpdf2
