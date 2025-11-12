@@ -165,33 +165,53 @@ with tab2:
     company = st.selectbox("Select Company", df["Company Name"].unique())
     row = df[df["Company Name"] == company].iloc[0]
 
-    # Trend Chart
-    hist = yf.download(row["Ticker"], period="6mo")
-    if not hist.empty:
-        fig, ax = plt.subplots(figsize=(12, 5))
-        ax.plot(hist.index, hist["Close"], label="Close Price", color="#1e88e5")
-        ax.axhline(row["target Price"], color="orange", linestyle="--", label=f"Target ₹{row['target Price']}")
-        ax.set_title(f"{company} - 6 Month Trend", color=fg_color)
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        fig.patch.set_facecolor(bg_color)
-        ax.set_facecolor(bg_color)
-        st.pyplot(fig)
+  # Trend Chart - AUTO CONTRAST
+hist = yf.download(row["Ticker"], period="6mo")
+if not hist.empty:
+    fig, ax = plt.subplots(figsize=(12, 5))
+    fig.patch.set_facecolor(bg_color)
+    ax.set_facecolor(bg_color)
+    
+    ax.plot(hist.index, hist["Close"], label="Close Price", color="#00d4ff", linewidth=2.5)
+    ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, 
+               label=f"Target ₹{row['target Price']}", alpha=0.9)
+    
+    # AUTO CONTRAST GRID & LINES
+    ax.grid(True, alpha=0.3, color=line_color)
+    ax.spines['bottom'].set_color(line_color)
+    ax.spines['top'].set_color(line_color)
+    ax.spines['left'].set_color(line_color)
+    ax.spines['right'].set_color(line_color)
+    
+    ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16, pad=20)
+    ax.legend(facecolor=bg_color, edgecolor=line_color, labelcolor=fg_color)
+    st.pyplot(fig)
 
-        # Horizontal Price Tracker
-        fig2, ax2 = plt.subplots(figsize=(12, 2))
-        prices = [row["Record Price"], row["Current Price"], row["target Price"]]
-        labels = ["Record", "Current", "Target"]
-        colors = ["red", "#1e88e5", "green"]
-        for p, l, c in zip(prices, labels, colors):
-            ax2.scatter(p, 0, color=c, s=200, zorder=5)
-            ax2.text(p, 0.15, f"{l}\n₹{p:,}", ha="center", va="bottom", fontweight="bold", fontsize=10)
-        ax2.set_xlim(min(prices)*0.9, max(prices)*1.1)
-        ax2.set_ylim(-0.5, 0.5)
-        ax2.axis("off")
-        ax2.set_title(f"{company} - Price Tracker", color=fg_color, pad=20)
-        fig2.patch.set_facecolor(bg_color)
-        st.pyplot(fig2)
+        # Horizontal Price Tracker - AUTO CONTRAST FOR DARK/LIGHT MODE
+fig2, ax2 = plt.subplots(figsize=(12, 2))
+fig2.patch.set_facecolor(bg_color)
+ax2.set_facecolor(bg_color)
+
+prices = [row["Record Price"], row["Current Price"], row["target Price"]]
+labels = ["Record", "Current", "Target"]
+colors = ["red", "#1e88e5", "green"]
+
+# AUTO CONTRAST LINE COLOR
+line_color = "white" if theme == "Dark" else "black"
+
+for p, l, c in zip(prices, labels, colors):
+    ax2.scatter(p, 0, color=c, s=200, zorder=5, edgecolors=line_color, linewidth=2)
+    ax2.text(p, 0.15, f"{l}\n₹{p:,}", ha="center", va="bottom", fontweight="bold", 
+             fontsize=10, color=fg_color)
+
+# Draw a visible horizontal line with auto contrast
+ax2.axhline(y=0, color=line_color, linewidth=1.5, alpha=0.8)
+
+ax2.set_xlim(min(prices)*0.9, max(prices)*1.1)
+ax2.set_ylim(-0.5, 0.5)
+ax2.axis("off")
+ax2.set_title(f"{company} - Price Tracker", color=fg_color, pad=20, fontsize=14)
+st.pyplot(fig2)
 
 with tab3:
     st.header("Performance Analysis")
