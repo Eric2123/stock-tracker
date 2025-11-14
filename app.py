@@ -1,4 +1,4 @@
-# app.py - FINAL FIX - UPLOAD FIRST, THEN PASSWORD
+# app.py - FINAL LEGEND - ALL CHARTS + NIFTY HEATMAP + PASSWORD AFTER UPLOAD
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -41,7 +41,7 @@ if not uploaded_file:
     st.info("Please upload your Excel file to unlock the dashboard.")
     st.stop()
 
-# ==================== STEP 2: NOW ASK FOR PASSWORD ====================
+# ==================== STEP 2: PASSWORD AFTER UPLOAD ====================
 if 'authenticated' not in st.session_state:
     st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password to Unlock</h2>", unsafe_allow_html=True)
     password = st.text_input("Password", type="password", placeholder="Enter secret password")
@@ -50,7 +50,7 @@ if 'authenticated' not in st.session_state:
     if st.button("Unlock Dashboard"):
         if password == SECRET_PASSWORD:
             st.session_state.authenticated = True
-            st.success("Access Granted!")
+            st.success("Access Granted! Dashboard Unlocked.")
             st.rerun()
         else:
             st.error("Wrong password. Try again.")
@@ -58,7 +58,7 @@ if 'authenticated' not in st.session_state:
     else:
         st.stop()
 
-# ==================== USER + WATCHLIST (AFTER AUTH) ====================
+# ==================== USER + WATCHLIST ====================
 if 'user' not in st.session_state: st.session_state.user = "Elite Trader"
 if 'watchlist' not in st.session_state: st.session_state.watchlist = []
 
@@ -145,18 +145,228 @@ with st.spinner("Processing your stocks..."):
     df = process_data(uploaded_file)
 st.success(f"Loaded {len(df)} stocks for {st.session_state.user}!")
 
-# ==================== REST OF YOUR CODE (TABS, HEATMAP, ETC.) ====================
-# [INSERT ALL YOUR TABS FROM BEFORE — INCLUDING NIFTY HEATMAP]
+# ==================== FILTERS ====================
+st.sidebar.markdown("### Select Stocks for Trends")
+selected_companies = st.sidebar.multiselect(
+    "Choose companies", df["Company Name"].unique(),
+    default=(st.session_state.watchlist + list(df["Company Name"].head(3).tolist()))[:3]
+)
+if not selected_companies: selected_companies = df["Company Name"].head(1).tolist()
 
-# Example: Just one tab to confirm it's working
-tab1, tab_heatmap = st.tabs(["Overview", "NIFTY HEATMAP"])
+period = st.sidebar.selectbox("Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
+cutoff = datetime(1900, 1, 1)
+if period == "Last 3 Months": cutoff = datetime.today() - timedelta(days=90)
+elif period == "Last 6 Months": cutoff = datetime.today() - timedelta(days=180)
+elif period == "Last 1 Year": cutoff = datetime.today() - timedelta(days=365)
+filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 
+csv = df.to_csv(index=False).encode()
+st.sidebar.download_button("Download Report", csv, "Stock_Report.csv", "text/csv")
+
+# ==================== NIFTY HEATMAP FUNCTION ====================
+@st.cache_data(ttl=60)
+def get_nifty_heatmap():
+    nifty50 = [
+        "ADANIPORTS.NS","ASIANPAINT.NS","AXISBANK.NS","BAJAJ-AUTO.NS","BAJFINANCE.NS",
+        "BAJAJFINSV.NS","BPCL.NS","BHARTIARTL.NS","BRITANNIA.NS","CIPLA.NS",
+        "COALINDIA.NS","DIVISLAB.NS","DRREDDY.NS","EICHERMOT.NS","GRASIM.NS",
+        "HCLTECH.NS","HDFCBANK.NS","HDFCLIFE.NS","HEROMOTOCO.NS","HINDALCO.NS",
+        "HINDUNILVR.NS","ICICIBANK.NS","ITC.NS","IOC.NS","INDUSINDBK.NS",
+        "INFY.NS","JSWSTEEL.NS","KOTAKBANK.NS","LT.NS","LTIM.NS",
+        "M&M.NS","MARUTI.NS","NESTLEIND.NS","NTPC.NS","ONGC.NS",
+        "POWERGRID.NS","RELIANCE.NS","SBILIFE.NS","SBIN.NS","SUNPHARMA.NS",
+        "TCS.NS","TATACONSUM.NS","TATAMOTORS.NS","TATASTEEL.NS","TECHM.NS",
+        "TITAN.NS","UPL.NS","ULTRACEMCO.NS","WIPRO.NS"
+    ]
+    sector_map = {
+        "RELIANCE.NS": "Energy", "TCS.NS": "IT", "HDFCBANK.NS": "Banking", "INFY.NS": "IT",
+        "BHARTIARTL.NS": "Telecom", "ICICIBANK.NS": "Banking", "SBIN.NS": "Banking",
+        "KOTAKBANK.NS": "Banking", "AXISBANK.NS": "Banking", "HINDUNILVR.NS": "FMCG",
+        "ITC.NS": "FMCG", "BAJFINANCE.NS": "Finance", "MARUTI.NS": "Auto",
+        "TATAMOTORS.NS": "Auto", "M&M.NS": "Auto", "LT.NS": "Infra",
+        "SUNPHARMA.NS": "Pharma", "DRREDDY.NS": "Pharma", "CIPLA.NS": "Pharma",
+        "ADANIPORTS.NS": "Infra", "JSWSTEEL.NS": "Metal", "TATASTEEL.NS": "Metal"
+    }
+    results = []
+    for t in nifty50:
+        try:
+            data = yf.Ticker(t).history(period="2d")
+            if len(data) < 2: continue
+            prev = data["Close"].iloc[-2]
+            curr = data["Close"].iloc[-1]
+            pct = ((curr - prev) / prev) * 100
+            sector = sector_map.get(t, "Others")
+            name = t.replace(".NS", "")
+            results.append({"Stock": name, "Change %": round(pct, 2), "Sector": sector})
+        except: continue
+    return pd.DataFrame(results)
+
+# ==================== TABS ====================
+tab1, tab2, tab3, tab4, tab_portfolio, tab_heatmap = st.tabs([
+    "Overview", "Trends", "Performance", "Sentiment", "Portfolio", "NIFTY HEATMAP"
+])
+
+# === TAB 1: OVERVIEW ===
 with tab1:
     st.header("Dashboard Overview")
-    st.write(df[["Company Name", "Current Price", "Percent Change"]].head())
+    col1, col2, col3 = st.columns(3)
+    with col1: st.metric("Total Stocks", len(df))
+    with col2: st.metric("Avg Return", f"{df['Percent Change'].mean():+.2f}%")
+    with col3:
+        top = df.loc[df["Percent Change"].idxmax()]
+        st.metric("Top Gainer", top["Company Name"], f"{top['Percent Change']:+.2f}%")
+    if df["Index"].nunique() > 1:
+        fig_pie = px.pie(df["Index"].value_counts().reset_index(), names="Index", values="count", hole=0.4,
+                         color_discrete_sequence=px.colors.sequential.Blues)
+        fig_pie.update_layout(paper_bgcolor=bg_color, plot_bgcolor=bg_color, font_color=fg_color)
+        st.plotly_chart(fig_pie, use_container_width=True)
+    st.subheader("Performance Table")
+    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target (%)"]]
+    styled = disp.style.format({
+        "Current Price": "₹{:.2f}", "target Price": "₹{:.2f}",
+        "Percent Change": "{:+.2f}%", "Distance from Target (%)": "{:+.2f}%"
+    }).bar(subset=["Percent Change"], color=['#90EE90', '#FFB6C1'])
+    st.dataframe(styled, use_container_width=True)
 
+# === TAB 2: TRENDS ===
+with tab2:
+    st.header("Stock Trends & Price Tracker")
+    for company in selected_companies:
+        row = df[df["Company Name"] == company].iloc[0]
+        st.markdown(f"### {company}")
+        if row["Current Price"] >= row["target Price"]:
+            st.success(f"TARGET HIT! {company} reached ₹{row['Current Price']:,}")
+        elif row["Current Price"] >= row["target Price"] * 0.95:
+            st.error(f"NEAR TARGET! Only ₹{row['target Price'] - row['Current Price']:.0f} away!")
+        hist = yf.download(row["Ticker"], period="6mo")
+        if not hist.empty:
+            fig, ax = plt.subplots(figsize=(12, 5))
+            ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=2.5)
+            ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']}")
+            ax.grid(True, alpha=0.3, color=line_color)
+            ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
+            ax.legend(facecolor=bg_color, labelcolor=fg_color)
+            st.pyplot(fig)
+
+            # WHATSAPP SHARE
+            buf = BytesIO()
+            fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
+            buf.seek(0)
+            b64 = base64.b64encode(buf.read()).decode()
+            wa_msg = f"*{company}* is at ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
+            wa_url = f"https://wa.me/?text={wa_msg.replace(' ', '%20')}"
+            st.markdown(f'<a href="{wa_url}" target="_blank"><button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;">Share on WhatsApp</button></a>', unsafe_allow_html=True)
+
+            # HORIZONTAL PRICE TRACKER
+            fig2, ax2 = plt.subplots(figsize=(12, 2))
+            prices = [row["Record Price"], row["Current Price"], row["target Price"]]
+            labels = ["Record", "Current", "Target"]
+            colors = ["red", "#1e88e5", "green"]
+            for p, l, c in zip(prices, labels, colors):
+                ax2.scatter(p, 0, color=c, s=200, edgecolors=line_color, linewidth=2)
+                ax2.text(p, 0.15, f"{l}\n₹{p:,}", ha="center", va="bottom", fontweight="bold", color=fg_color)
+            ax2.axhline(0, color=line_color, linewidth=1.5)
+            ax2.set_xlim(min(prices)*0.9, max(prices)*1.1)
+            ax2.set_ylim(-0.5, 0.5)
+            ax2.axis("off")
+            ax2.set_title(f"{company} - Price Tracker", color=fg_color)
+            st.pyplot(fig2)
+        st.markdown("---")
+
+# === TAB 3: PERFORMANCE ===
+with tab3:
+    st.header("Performance Analysis")
+    st.bar_chart(filtered.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Top 5 Gainers")
+        st.dataframe(filtered.nlargest(5, "Percent Change")[["Company Name", "Percent Change"]], use_container_width=True)
+    with col2:
+        st.subheader("Top 5 Losers")
+        st.dataframe(filtered.nsmallest(5, "Percent Change")[["Company Name", "Percent Change"]], use_container_width=True)
+    st.subheader("Heatmap")
+    values = filtered["Absolute Current Price (%)"].fillna(0)
+    norm = mcolors.TwoSlopeNorm(vmin=values.min(), vcenter=0, vmax=values.max())
+    cols, rows = 6, (len(values) + 5) // 6
+    fig, ax = plt.subplots(figsize=(16, rows * 1.8))
+    for i, (comp, val) in enumerate(zip(filtered["Company Name"], values)):
+        r, c = divmod(i, cols)
+        color = plt.get_cmap("RdYlGn")(norm(val))
+        ax.add_patch(plt.Rectangle((c, rows - r - 1), 1, 1, facecolor=color, edgecolor="white"))
+        ax.text(c + 0.5, rows - r - 0.5, f"{comp}\n{val:+.1f}%", ha="center", va="center", fontsize=9, color="black")
+    ax.set_xlim(0, cols); ax.set_ylim(0, rows); ax.axis("off")
+    ax.set_title("Performance Heatmap", color=fg_color, fontsize=16)
+    st.pyplot(fig)
+
+# === TAB 4: SENTIMENT ===
+with tab4:
+    st.header("Market Sentiment")
+    try:
+        news = GNews(language='en', country='IN', max_results=8)
+        items = news.get_news("Indian stock market")
+        sentiments = []
+        for item in items:
+            pol = TextBlob(item['title']).sentiment.polarity
+            label = "Positive" if pol > 0.1 else "Negative" if pol < -0.1 else "Neutral"
+            sentiments.append(pol)
+            with st.expander(item['title']):
+                st.write(f"**Source:** {item['publisher']['title']}")
+                if 'image' in item and item['image']:
+                    st.image(item['image'], use_column_width=True)
+                st.write(f"→ **{label}** ({pol:+.2f})")
+        avg = np.mean(sentiments)
+        if avg > 0.1: st.success(f"Overall: Positive ({avg:+.2f})")
+        elif avg < -0.1: st.error(f"Overall: Negative ({avg:+.2f})")
+        else: st.info(f"Overall: Neutral ({avg:+.2f})")
+    except:
+        st.warning("News temporarily unavailable")
+
+# === TAB 5: PORTFOLIO ===
+with tab_portfolio:
+    st.header(f"{st.session_state.user}'s Portfolio")
+    stock = st.selectbox("Select Stock", df["Company Name"])
+    row = df[df["Company Name"] == stock].iloc[0]
+    col1, col2 = st.columns(2)
+    with col1: shares = st.number_input("Shares", min_value=1, value=100)
+    with col2: buy_price = st.number_input("Buy Price", value=float(row["Record Price"]))
+    value = shares * row["Current Price"]
+    profit = (row["Current Price"] - buy_price) * shares
+    st.metric("Current Value", f"₹{value:,.0f}")
+    st.metric("Profit/Loss", f"₹{profit:,.0f}", delta=f"{(profit/(buy_price*shares)*100):+.1f}%")
+
+# === TAB 6: NIFTY HEATMAP ===
 with tab_heatmap:
     st.header("LIVE NIFTY 50 HEATMAP")
-    st.write("NIFTY Heatmap coming soon...")
+    with st.spinner("Loading NIFTY 50..."):
+        heat_df = get_nifty_heatmap()
+    if not heat_df.empty:
+        heat_df = heat_df.sort_values("Change %", ascending=False)
+        fig, ax = plt.subplots(figsize=(14, 10))
+        norm = mcolors.TwoSlopeNorm(vmin=heat_df["Change %"].min(), vcenter=0, vmax=heat_df["Change %"].max())
+        sectors = heat_df["Sector"].unique()
+        y_pos = 0
+        for sector in sectors:
+            sec_data = heat_df[heat_df["Sector"] == sector]
+            x_pos = 0
+            for _, row in sec_data.iterrows():
+                color = plt.get_cmap("RdYlGn")(norm(row["Change %"]))
+                ax.add_patch(plt.Rectangle((x_pos, y_pos), 1, 1, facecolor=color, edgecolor='white'))
+                ax.text(x_pos + 0.5, y_pos + 0.5, f"{row['Stock']}\n{row['Change %']:+.1f}%", 
+                        ha='center', va='center', fontsize=8, fontweight='bold')
+                x_pos += 1
+            ax.text(-0.5, y_pos + 0.5, sector, ha='right', va='center', fontweight='bold', color=fg_color)
+            y_pos += 1
+        ax.set_xlim(0, max(heat_df.groupby("Sector").size()))
+        ax.set_ylim(0, len(sectors))
+        ax.axis("off")
+        ax.set_title("NIFTY 50 HEATMAP - TODAY'S CHANGE %", color=fg_color, fontsize=18)
+        st.pyplot(fig)
+        col1, col2, col3 = st.columns(3)
+        with col1: st.metric("Up", len(heat_df[heat_df["Change %"] > 0]))
+        with col2: st.metric("Down", len(heat_df[heat_df["Change %"] < 0]))
+        with col3: st.metric("Avg", f"{heat_df['Change %'].mean():+.2f}%")
+    else:
+        st.error("NIFTY data failed")
 
-st.sidebar.success("APP UNLOCKED")
+st.sidebar.success("ALL CHARTS LIVE")
+st.sidebar.info("Password • Watchlist • Portfolio • WhatsApp • NIFTY HEATMAP")
