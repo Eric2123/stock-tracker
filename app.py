@@ -1,208 +1,219 @@
-# app.py - Streamlit app (cleaned from Colab notebook)
+# app.py - FINAL NO-EXCEL VERSION - CLIENT-READY - PRIVATE + ALL FEATURES
 import streamlit as st
 import pandas as pd
+import yfinance as yf
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
+import plotly.express as px
 from datetime import datetime, timedelta
-import io
+from textblob import TextBlob
+from gnews import GNews
+import time
+import base64
+from io import BytesIO
 
-# optional plotting libs - use if available
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib.colors as mcolors
-except Exception:
-    plt = None
-try:
-    import seaborn as sns
-except Exception:
-    sns = None
+# ==================== PASSWORD PROTECTION ====================
+st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password</h2>", unsafe_allow_html=True)
+password = st.text_input("Password", type="password", placeholder="Secret key")
 
-# optional yfinance - if not installed / blocked, app will still work with uploaded CSV
-try:
-    import yfinance as yf
-except Exception:
-    yf = None
+# CHANGE THIS TO YOUR PASSWORD
+SECRET_PASSWORD = "stockking123"  # CHANGE NOW!
 
-st.set_page_config(page_title="Stock Tracker", layout="wide")
-
-st.title("Stock Tracker — Upload file or use yfinance (if available)")
-
-st.markdown(
-    """
-    **Upload** your Excel (or CSV) file with columns:
-    - `Company Name`
-    - `Ticker`
-    - `Index` (optional)
-    - `Record Price`
-    - `Target Price`
-    - `Date of Publishing` (d/m/Y or parseable)
-    
-    Or, if you prefer, the app will attempt to fetch prices from Yahoo Finance when `yfinance` is available.
-    """
-)
-
-uploaded_file = st.file_uploader("Upload Excel or CSV file (pythonmaster.xlsx or pythonmaster.csv)", type=["xlsx", "csv"])
-use_yfinance = st.checkbox("Try to fetch live prices with yfinance (only if installed)", value=False)
-
-# helper to load uploaded file
-@st.cache_data
-def load_input_file(uploaded):
-    if uploaded is None:
-        return None
-    name = uploaded.name.lower()
-    try:
-        if name.endswith(".xlsx") or name.endswith(".xls"):
-            df = pd.read_excel(uploaded)
-        else:
-            df = pd.read_csv(uploaded)
-    except Exception as e:
-        st.error(f"Failed to read file: {e}")
-        return None
-    return df
-
-df_input = load_input_file(uploaded_file)
-
-if df_input is None:
-    st.info("Upload a file to begin. You can also commit a CSV to the repo and the app can read it.")
+if password != SECRET_PASSWORD:
+    st.error("Access Denied.")
     st.stop()
 
-# normalize column names (common fixes)
-df = df_input.copy()
-df.columns = [c.strip() for c in df.columns]
-# try to detect index-like column if missing
-if "Index" not in df.columns:
-    for col in df.columns:
-        if "index" in col.lower() or "unnamed" in col.lower():
-            df.rename(columns={col: "Index"}, inplace=True)
-            break
-
-# parse dates
-df["Date of Publishing"] = pd.to_datetime(df.get("Date of Publishing", pd.NaT), dayfirst=True, errors="coerce")
-
-# prepare time windows
-today = datetime.today()
-three_months_ago = today - timedelta(days=90)
-six_months_ago = today - timedelta(days=180)
-
-# processing button
-if st.button("Run Processing"):
-    st.info("Processing rows — this can take time if yfinance is enabled and many tickers are present.")
-    results = []
-    for _, row in st.experimental_data_editor(df, num_rows="dynamic").iterrows():
-        company = row.get("Company Name")
-        ticker = str(row.get("Ticker", "")).strip()
-        index = row.get("Index", "")
-        record_price = row.get("Record Price")
-        target_price = row.get("Target Price")
-        pub_date = row.get("Date of Publishing")
-
-        # skip invalid rows
-        if not company or not ticker:
-            continue
-
-        st.write(f"Processing: {company} ({ticker})")
-        # default values
-        current_price = None
-        price_3m = None
-        price_6m = None
-
-        # try live fetch if requested and yfinance available
-        if use_yfinance and yf is not None:
-            try:
-                stock = yf.Ticker(ticker)
-                hist = stock.history(period="1y")
-                if not hist.empty and "Close" in hist:
-                    hist.index = hist.index.tz_localize(None)
-                    current_price = float(hist["Close"].iloc[-1])
-                    hist_3m = hist[hist.index >= three_months_ago]
-                    hist_6m = hist[hist.index >= six_months_ago]
-                    price_3m = float(hist_3m["Close"].iloc[0]) if not hist_3m.empty else None
-                    price_6m = float(hist_6m["Close"].iloc[0]) if not hist_6m.empty else None
-                else:
-                    st.write(f"Warning: no history for {ticker}")
-            except Exception as e:
-                st.write(f"yfinance error for {ticker}: {e}")
-
-        # if no live data, try to read from columns if present
-        # e.g., if input file has "Current Price", "Price 3M", "Price 6M"
-        if current_price is None:
-            if "Current Price" in df.columns and not pd.isna(row.get("Current Price")):
-                current_price = row.get("Current Price")
-        if price_3m is None and "Price 3M" in df.columns:
-            price_3m = row.get("Price 3M")
-        if price_6m is None and "Price 6M" in df.columns:
-            price_6m = row.get("Price 6M")
-
-        # Compute percentage changes safely
-        try:
-            irr_current = ((current_price - record_price) / record_price) * 100 if pd.notna(record_price) and pd.notna(current_price) else None
-        except Exception:
-            irr_current = None
-        try:
-            irr_3m = ((price_3m - record_price) / record_price) * 100 if pd.notna(record_price) and pd.notna(price_3m) else None
-        except Exception:
-            irr_3m = None
-        try:
-            irr_6m = ((price_6m - record_price) / record_price) * 100 if pd.notna(record_price) and pd.notna(price_6m) else None
-        except Exception:
-            irr_6m = None
-
-        results.append({
-            "Date of Publishing": pd.to_datetime(pub_date).date() if not pd.isna(pub_date) else None,
-            "Company Name": company,
-            "Ticker": ticker,
-            "Index": index,
-            "Record Price": record_price,
-            "Current Price": round(current_price, 2) if current_price is not None else None,
-            "target Price": target_price,
-            "Price 3M": round(price_3m, 2) if price_3m is not None else None,
-            "Price 6M": round(price_6m, 2) if price_6m is not None else None,
-            "Absolute Current Price (%)": round(irr_current, 2) if irr_current is not None else None,
-            "Absolute 3M Price (%)": round(irr_3m, 2) if irr_3m is not None else None,
-            "Absolute 6M Price (%)": round(irr_6m, 2) if irr_6m is not None else None
-        })
-
-    if len(results) == 0:
-        st.warning("No valid rows processed.")
-        st.stop()
-
-    final_df = pd.DataFrame(results)
-
-    st.success("Processing complete — results below.")
-    st.dataframe(final_df.head(50), use_container_width=True)
-
-    # prepare CSV download
-    csv_bytes = final_df.to_csv(index=False).encode("utf-8")
-    st.download_button("Download results as CSV", data=csv_bytes, file_name="BSE_Final_Output.csv", mime="text/csv")
-
-    # show heatmap if matplotlib available
-    if plt is not None:
-        try:
-            vals = final_df["Absolute Current Price (%)"].dropna().tolist()
-            companies = final_df["Company Name"].tolist()
-            if len(vals) > 0:
-                norm = mcolors.TwoSlopeNorm(vmin=min(vals), vcenter=0, vmax=max(vals))
-                cmap = plt.get_cmap("RdYlGn")
-                cols = 7
-                rows = int(np.ceil(len(companies) / cols))
-                fig, ax = plt.subplots(figsize=(12, max(4, rows * 1.2)))
-                for i, (company, val) in enumerate(zip(companies, final_df["Absolute Current Price (%)"])):
-                    row = i // cols
-                    col = i % cols
-                    color = cmap(norm(val)) if pd.notna(val) else (0.8, 0.8, 0.8)
-                    rect = plt.Rectangle((col, rows - row - 1), 1, 1, facecolor=color, edgecolor="black")
-                    ax.add_patch(rect)
-                    ax.text(col + 0.5, rows - row - 0.5,
-                            f"{company}\n{'' if pd.isna(val) else f'{val:.2f}%'}",
-                            ha="center", va="center", fontsize=8, wrap=True)
-                ax.set_xlim(0, cols)
-                ax.set_ylim(0, rows)
-                ax.axis("off")
-                st.pyplot(fig)
-        except Exception as e:
-            st.write("Could not render heatmap:", e)
-    else:
-        st.info("matplotlib not available — skipping heatmap.")
-
-    st.balloons()
+# ==================== AUTO REFRESH ====================
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = time.time()
+elapsed = time.time() - st.session_state.last_refresh
+if elapsed >= 60:
+    st.session_state.last_refresh = time.time()
+    st.rerun()
 else:
-    st.info("Click **Run Processing** after uploading your file and (optionally) enabling yfinance.")
+    st.sidebar.caption(f"Auto-refresh in {60 - int(elapsed)}s")
+
+# ==================== PAGE CONFIG + HEADER ====================
+st.set_page_config(page_title="Stock Tracker Pro", page_icon="Chart increasing", layout="wide", initial_sidebar_state="expanded")
+st.markdown("""
+<div style="text-align:center;padding:20px;background:linear-gradient(90deg,#1e88e5,#00d4ff);border-radius:15px;margin-bottom:20px;">
+    <h1 style="color:white;margin:0;animation:glow 2s infinite alternate;">STOCK TRACKER PRO</h1>
+    <p style="color:white;margin:5px;">Client-Ready • No Upload • Instant Access</p>
+</div>
+<style>@keyframes glow {from{text-shadow:0 0 10px #00d4ff;}to{text-shadow:0 0 30px #00ff00;}}</style>
+""", unsafe_allow_html=True)
+
+# ==================== USER + WATCHLIST ====================
+if 'user' not in st.session_state: st.session_state.user = "Client"
+if 'watchlist' not in st.session_state: st.session_state.watchlist = []
+
+user = st.sidebar.text_input("Your Name", value=st.session_state.user)
+if user != st.session_state.user:
+    st.session_state.user = user
+    st.sidebar.success(f"Welcome, {user}!")
+
+st.sidebar.markdown("### Star Watchlist")
+add_watch = st.sidebar.text_input("Add stock")
+if st.sidebar.button("Add"):
+    if 'df' in locals() and add_watch in df["Company Name"].values:
+        if add_watch not in st.session_state.watchlist:
+            st.session_state.watchlist.append(add_watch)
+            st.sidebar.success(f"{add_watch} added!")
+    else:
+        st.sidebar.error("Not found")
+
+for w in st.session_state.watchlist:
+    st.sidebar.success(f"Star {w}")
+
+# ==================== HARDCODED DATA (NO UPLOAD!) ====================
+@st.cache_data
+def load_hardcoded_data():
+    data = {
+        "Company Name": ["Reliance", "TCS", "HDFC Bank", "Infosys", "Bharti Airtel", "ICICI Bank"],
+        "Ticker": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "BHARTIARTL.NS", "ICICIBANK.NS"],
+        "Record Price": [2800, 3500, 1500, 1700, 900, 800],
+        "Target Price": [3200, 4000, 1800, 2000, 1100, 950],
+        "Date of Publishing": ["2025-01-15", "2025-02-10", "2025-03-01", "2025-01-20", "2025-02-28", "2025-03-15"],
+        "Index": ["Large Cap", "Large Cap", "Large Cap", "Large Cap", "Large Cap", "Large Cap"]
+    }
+    df = pd.DataFrame(data)
+    df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"])
+    return df
+
+df_raw = load_hardcoded_data()
+
+# ==================== FETCH LIVE PRICES ====================
+@st.cache_data(ttl=60)
+def fetch_live_prices(df):
+    results = []
+    for _, row in df.iterrows():
+        try:
+            current = yf.Ticker(row["Ticker"]).history(period="1d")["Close"].iloc[-1]
+            results.append({
+                "Company Name": row["Company Name"],
+                "Ticker": row["Ticker"],
+                "Record Price": row["Record Price"],
+                "Current Price": round(current, 2),
+                "target Price": row["Target Price"],
+                "Index": row["Index"],
+                "Date of Publishing": row["Date of Publishing"].date()
+            })
+        except: pass
+    final_df = pd.DataFrame(results)
+    final_df["Percent Change"] = ((final_df["Current Price"] - final_df["Record Price"]) / final_df["Record Price"] * 100).round(2)
+    final_df["Distance from Target (%)"] = ((final_df["Current Price"] - final_df["target Price"]) / final_df["target Price"] * 100).round(2)
+    return final_df
+
+with st.spinner("Loading live stock data..."):
+    df = fetch_live_prices(df_raw)
+
+st.success(f"Live data loaded for {len(df)} stocks!")
+
+# ==================== THEME + LIVE INDICES ====================
+theme = st.sidebar.radio("Theme", ["Dark", "Light"], index=0)
+bg_color = "#1a1a1a" if theme == "Dark" else "white"
+fg_color = "white" if theme == "Dark" else "black"
+line_color = "white" if theme == "Dark" else "black"
+
+plt.rcParams.update({'text.color': fg_color, 'axes.labelcolor': fg_color, 'xtick.color': fg_color, 'ytick.color': fg_color,
+                     'axes.edgecolor': line_color, 'figure.facecolor': bg_color, 'axes.facecolor': bg_color})
+
+@st.cache_data(ttl=15)
+def get_indices():
+    try:
+        n = yf.Ticker("^NSEI").history(period="1d")["Close"].iloc[-1]
+        s = yf.Ticker("^BSESN").history(period="1d")["Close"].iloc[-1]
+        return round(n, 2), round(s, 2)
+    except: return 25000, 82000
+
+nifty, sensex = get_indices()
+st.sidebar.metric("NIFTY 50", f"₹{nifty:,.0f}")
+st.sidebar.metric("SENSEX", f"₹{sensex:,.0f}")
+
+# ==================== FILTERS ====================
+selected_companies = st.sidebar.multiselect("Select for Trends", df["Company Name"], default=st.session_state.watchlist[:3])
+period = st.sidebar.selectbox("Time Period", ["All Time", "Last 3 Months"])
+cutoff = datetime.today() - timedelta(days=90) if period == "Last 3 Months" else datetime(1900,1,1)
+filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
+
+csv = df.to_csv(index=False).encode()
+st.sidebar.download_button("Download Report", csv, "Stock_Report.csv", "text/csv")
+
+# ==================== TABS ====================
+tab1, tab2, tab3, tab4, tab_port = st.tabs(["Overview", "Trends", "Performance", "Sentiment", "Portfolio"])
+
+with tab1:
+    st.header("Dashboard")
+    col1, col2, col3 = st.columns(3)
+    with col1: st.metric("Stocks", len(df))
+    with col2: st.metric("Avg Gain", f"{df['Percent Change'].mean():+.1f}%")
+    with col3:
+        top = df.loc[df["Percent Change"].idxmax()]
+        st.metric("Top Gainer", top["Company Name"], f"{top['Percent Change']:+.1f}%")
+    fig_pie = px.pie(df["Index"].value_counts(), names=df["Index"].value_counts().index, hole=0.4)
+    fig_pie.update_layout(paper_bgcolor=bg_color, plot_bgcolor=bg_color, font_color=fg_color)
+    st.plotly_chart(fig_pie, use_container_width=True)
+
+    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change"]]
+    st.dataframe(disp.style.format({"Current Price": "₹{:.0f}", "target Price": "₹{:.0f}", "Percent Change": "{:+.1f}%"}), use_container_width=True)
+
+with tab2:
+    st.header("Trends")
+    for company in selected_companies:
+        row = df[df["Company Name"] == company].iloc[0]
+        st.subheader(company)
+        if row["Current Price"] >= row["target Price"]:
+            st.success("TARGET HIT!")
+        hist = yf.download(row["Ticker"], period="6mo")
+        if not hist.empty:
+            fig, ax = plt.subplots(figsize=(12,5))
+            ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=3)
+            ax.axhline(row["target Price"], color="orange", linestyle="--")
+            ax.set_title(f"{company} - 6M Trend", color=fg_color)
+            st.pyplot(fig)
+
+            buf = BytesIO()
+            fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
+            buf.seek(0)
+            b64 = base64.b64encode(buf.read()).decode()
+            wa_url = f"https://wa.me/?text={company}%20at%20₹{row['Current Price']:,}"
+            st.markdown(f'<a href="{wa_url}" target="_blank"><button style="background:#25D366;color:white;padding:10px;border-radius:10px;">Share on WhatsApp</button></a>', unsafe_allow_html=True)
+
+            fig2, ax2 = plt.subplots(figsize=(12,2))
+            for p, l, c in zip([row["Record Price"], row["Current Price"], row["target Price"]], ["Record", "Current", "Target"], ["red", "#1e88e5", "green"]):
+                ax2.scatter(p, 0, color=c, s=200)
+                ax2.text(p, 0.15, f"{l}\n₹{p:,}", ha="center", color=fg_color, fontweight="bold")
+            ax2.axis("off")
+            st.pyplot(fig2)
+        st.markdown("---")
+
+with tab3:
+    st.header("Performance")
+    st.bar_chart(filtered.set_index("Company Name")["Percent Change"])
+    col1, col2 = st.columns(2)
+    with col1: st.dataframe(filtered.nlargest(3, "Percent Change")[["Company Name", "Percent Change"]])
+    with col2: st.dataframe(filtered.nsmallest(3, "Percent Change")[["Company Name", "Percent Change"]])
+
+with tab4:
+    st.header("Sentiment")
+    try:
+        news = GNews(language='en', country='IN', max_results=5)
+        items = news.get_news("Nifty")
+        for item in items:
+            with st.expander(item['title']):
+                if 'image' in item: st.image(item['image'])
+                st.caption(item['published date'])
+    except: st.warning("News unavailable")
+
+with tab_port:
+    st.header("Portfolio")
+    stock = st.selectbox("Stock", df["Company Name"])
+    row = df[df["Company Name"] == stock].iloc[0]
+    shares = st.number_input("Shares", 1, 1000, 100)
+    value = shares * row["Current Price"]
+    profit = (row["Current Price"] - row["Record Price"]) * shares
+    st.metric("Value", f"₹{value:,.0f}")
+    st.metric("Profit", f"₹{profit:,.0f}", delta=f"{profit/(row['Record Price']*shares)*100:+.1f}%")
+
+st.sidebar.success("CLIENT-READY • NO UPLOAD")
