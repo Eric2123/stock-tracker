@@ -1,4 +1,4 @@
-# app.py - FINAL PRIVATE LEGEND - PASSWORD + ORIGINAL + 7 FEATURES
+# app.py - FINAL QUALSCORE EDITION - LOGO + ALERTS + P&L
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -13,13 +13,10 @@ import time
 import base64
 from io import BytesIO
 
-# ==================== PASSWORD PROTECTION (CHANGE THIS!) ====================
+# ==================== PASSWORD PROTECTION ====================
 st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password</h2>", unsafe_allow_html=True)
 password = st.text_input("Password", type="password", placeholder="Enter secret password")
-
-# CHANGE THIS TO YOUR OWN PASSWORD
-SECRET_PASSWORD = "stockking123"  # CHANGE THIS NOW!
-
+SECRET_PASSWORD = "stockking123"  # CHANGE THIS!
 if password != SECRET_PASSWORD:
     st.error("Incorrect password. Access denied.")
     st.stop()
@@ -28,42 +25,32 @@ if password != SECRET_PASSWORD:
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
 elapsed = time.time() - st.session_state.last_refresh
-refresh_in = 60 - int(elapsed)
 if elapsed >= 60:
     st.session_state.last_refresh = time.time()
     st.rerun()
 else:
-    st.sidebar.caption(f"Auto-refresh in {refresh_in}s")
+    st.sidebar.caption(f"Auto-refresh in {60 - int(elapsed)}s")
 
-# ==================== PAGE CONFIG + ANIMATED HEADER ====================
-st.set_page_config(
-    page_title="Stock Tracker Pro",
-    page_icon="Chart increasing",
-    layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={'About': "# Stock Tracker Pro\nPrivate Elite Dashboard"}
-)
-
+# ==================== PAGE CONFIG + QUALSCORE LOGO ====================
+st.set_page_config(page_title="QualSCORE", page_icon="Chart increasing", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
 <div style="text-align:center;padding:20px;background:linear-gradient(90deg,#1e88e5,#00d4ff);border-radius:15px;margin-bottom:20px;">
-    <h1 style="color:white;margin:0;animation:glow 2s infinite alternate;">STOCK TRACKER PRO</h1>
-    <p style="color:white;margin:5px;font-size:18px;">Private. Elite. Legendary.</p>
+    <h1 style="color:white;margin:0;font-size:40px;animation:glow 2s infinite alternate;">QualSCORE</h1>
+    <p style="color:white;margin:5px;font-size:18px;">FUNDAMENTAL, TECHNICAL, QUALITATIVE</p>
 </div>
 <style>@keyframes glow {from{text-shadow:0 0 10px #00d4ff;}to{text-shadow:0 0 30px #00ff00;}}</style>
 """, unsafe_allow_html=True)
 
-# ==================== MULTI-USER + WATCHLIST ====================
-if 'user' not in st.session_state:
-    st.session_state.user = "Elite Trader"
-if 'watchlist' not in st.session_state:
-    st.session_state.watchlist = []
+# ==================== USER + WATCHLIST ====================
+if 'user' not in st.session_state: st.session_state.user = "Elite Trader"
+if 'watchlist' not in st.session_state: st.session_state.watchlist = []
 
 user = st.sidebar.text_input("Your Name", value=st.session_state.user)
 if user != st.session_state.user:
     st.session_state.user = user
     st.sidebar.success(f"Welcome back, {user}!")
 
-st.sidebar.markdown("### Star Your Watchlist")
+st.sidebar.markdown("### Star Watchlist")
 add_watch = st.sidebar.text_input("Add to Watchlist")
 if st.sidebar.button("Add"):
     if 'df' in locals() and add_watch in df["Company Name"].values:
@@ -72,11 +59,10 @@ if st.sidebar.button("Add"):
             st.sidebar.success(f"{add_watch} added!")
     else:
         st.sidebar.error("Stock not found")
-
 for w in st.session_state.watchlist:
     st.sidebar.success(f"Star {w}")
 
-# ==================== SIDEBAR UPLOAD + THEME + LIVE INDICES ====================
+# ==================== UPLOAD + THEME + INDICES ====================
 st.sidebar.header("Upload pythonmaster.xlsx")
 uploaded_file = st.sidebar.file_uploader("Choose file", type=["xlsx"])
 if not uploaded_file:
@@ -95,22 +81,20 @@ plt.rcParams.update({
     'axes.facecolor': bg_color
 })
 
-st.sidebar.markdown("### LIVE MARKET")
 @st.cache_data(ttl=15)
 def get_indices():
     try:
-        nifty = yf.Ticker("^NSEI").history(period="1d")["Close"].iloc[-1]
-        sensex = yf.Ticker("^BSESN").history(period="1d")["Close"].iloc[-1]
-        return round(nifty, 2), round(sensex, 2)
-    except:
-        return None, None
+        n = yf.Ticker("^NSEI").history(period="1d")["Close"].iloc[-1]
+        s = yf.Ticker("^BSESN").history(period="1d")["Close"].iloc[-1]
+        return round(n, 2), round(s, 2)
+    except: return None, None
 
 nifty, sensex = get_indices()
 if nifty and sensex:
     st.sidebar.metric("**NIFTY 50**", f"₹{nifty:,.0f}")
     st.sidebar.metric("**SENSEX**", f"₹{sensex:,.0f}")
 else:
-    st.sidebar.warning("Loading live indices...")
+    st.sidebar.warning("Loading indices...")
 
 # ==================== DATA PROCESSING ====================
 @st.cache_data(show_spinner=False)
@@ -119,50 +103,31 @@ def process_data(file):
     df = pd.read_excel(file, engine="openpyxl")
     df.columns = df.columns.str.strip()
     required = ["Company Name", "Ticker", "Record Price", "Target Price", "Date of Publishing"]
-    if "Index" not in df.columns:
-        df["Index"] = "Unknown"
+    if "Index" not in df.columns: df["Index"] = "Unknown"
     missing = [c for c in required if c not in df.columns]
-    if missing:
-        st.error(f"Missing columns: {missing}")
-        st.stop()
+    if missing: st.error(f"Missing: {missing}"); st.stop()
     df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True, errors='coerce')
     df = df.dropna(subset=["Date of Publishing"])
     results = []
-    progress = st.progress(0)
-    status = st.empty()
-    today = datetime.today()
-    three_m = today - timedelta(days=90)
-    six_m = today - timedelta(days=180)
-    for i, row in df.iterrows():
-        company = row["Company Name"]
+    for _, row in df.iterrows():
         ticker = str(row["Ticker"]).strip()
-        if not ticker.endswith((".BO", ".NS")):
-            ticker += ".BO"
-        status.text(f"Fetching {company}...")
+        if not ticker.endswith((".BO", ".NS")): ticker += ".BO"
         try:
-            data = yf.Ticker(ticker).history(period="1y")
-            if data.empty: continue
-            data.index = data.index.tz_localize(None)
-            current = data["Close"].iloc[-1]
-            pct = ((current - row["Record Price"]) / row["Record Price"]) * 100
+            current = yf.Ticker(ticker).history(period="1d")["Close"].iloc[-1]
             results.append({
-                "Date of Publishing": row["Date of Publishing"].date(),
-                "Company Name": company,
+                "Company Name": row["Company Name"],
                 "Ticker": ticker,
-                "Index": row.get("Index", "Unknown"),
                 "Record Price": row["Record Price"],
                 "Current Price": round(current, 2),
                 "target Price": row["Target Price"],
-                "Absolute Current Price (%)": round(pct, 2),
+                "Index": row.get("Index", "Unknown"),
+                "Date of Publishing": row["Date of Publishing"].date()
             })
-        except:
-            continue
-        progress.progress((i + 1) / len(df))
-    status.empty()
-    progress.empty()
+        except: continue
     final_df = pd.DataFrame(results)
     final_df["Percent Change"] = ((final_df["Current Price"] - final_df["Record Price"]) / final_df["Record Price"] * 100).round(2)
     final_df["Distance from Target (%)"] = ((final_df["Current Price"] - final_df["target Price"]) / final_df["target Price"] * 100).round(2)
+    final_df["Absolute Current Price (%)"] = final_df["Percent Change"]
     return final_df
 
 with st.spinner("Processing your stocks..."):
@@ -172,12 +137,10 @@ st.success(f"Processed {len(df)} stocks for {st.session_state.user}!")
 # ==================== FILTERS ====================
 st.sidebar.markdown("### Select Stocks for Trends")
 selected_companies = st.sidebar.multiselect(
-    "Choose companies",
-    options=df["Company Name"].unique(),
+    "Choose companies", df["Company Name"].unique(),
     default=(st.session_state.watchlist + list(df["Company Name"].head(3).tolist()))[:3]
 )
-if not selected_companies:
-    selected_companies = df["Company Name"].head(1).tolist()
+if not selected_companies: selected_companies = df["Company Name"].head(1).tolist()
 
 period = st.sidebar.selectbox("Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
 cutoff = datetime(1900, 1, 1)
@@ -187,11 +150,12 @@ elif period == "Last 1 Year": cutoff = datetime.today() - timedelta(days=365)
 filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 
 csv = df.to_csv(index=False).encode()
-st.sidebar.download_button("Download Full Report (CSV)", csv, "Stock_Report.csv", "text/csv")
+st.sidebar.download_button("Download Report", csv, "Stock_Report.csv", "text/csv")
 
 # ==================== TABS ====================
 tab1, tab2, tab3, tab4, tab_portfolio = st.tabs(["Overview", "Trends", "Performance", "Sentiment", "Portfolio"])
 
+# TAB 1: OVERVIEW
 with tab1:
     st.header("Dashboard Overview")
     col1, col2, col3 = st.columns(3)
@@ -208,22 +172,34 @@ with tab1:
     st.subheader("Performance Table")
     disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target (%)"]]
     styled = disp.style.format({
-        "Current Price": "₹{:.2f}",
-        "target Price": "₹{:.2f}",
-        "Percent Change": "{:+.2f}%",
-        "Distance from Target (%)": "{:+.2f}%"
+        "Current Price": "₹{:.2f}", "target Price": "₹{:.2f}",
+        "Percent Change": "{:+.2f}%", "Distance from Target (%)": "{:+.2f}%"
     }).bar(subset=["Percent Change"], color=['#90EE90', '#FFB6C1'])
     st.dataframe(styled, use_container_width=True)
 
+# TAB 2: TRENDS + TARGET ALERT
 with tab2:
     st.header("Stock Trends & Price Tracker")
     for company in selected_companies:
         row = df[df["Company Name"] == company].iloc[0]
         st.markdown(f"### {company}")
+        
+        # TARGET HIT + WHATSAPP ALERT
         if row["Current Price"] >= row["target Price"]:
             st.success(f"TARGET HIT! {company} reached ₹{row['Current Price']:,}")
+            alert = f"QUALSCORE ALERT: {company} HIT TARGET! Current: ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
+            wa_link = f"https://wa.me/?text={alert.replace(' ', '%20')}"
+            st.markdown(f'''
+            <a href="{wa_link}" target="_blank">
+                <button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:bold;">
+                    Send WhatsApp Alert
+                </button>
+            </a>
+            ''', unsafe_allow_html=True)
         elif row["Current Price"] >= row["target Price"] * 0.95:
             st.error(f"NEAR TARGET! Only ₹{row['target Price'] - row['Current Price']:.0f} away!")
+
+        # 6-MONTH CHART
         hist = yf.download(row["Ticker"], period="6mo")
         if not hist.empty:
             fig, ax = plt.subplots(figsize=(12, 5))
@@ -259,6 +235,7 @@ with tab2:
             st.pyplot(fig2)
         st.markdown("---")
 
+# TAB 3: PERFORMANCE
 with tab3:
     st.header("Performance Analysis")
     st.bar_chart(filtered.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
@@ -283,6 +260,7 @@ with tab3:
     ax.set_title("Performance Heatmap", color=fg_color, fontsize=16)
     st.pyplot(fig)
 
+# TAB 4: SENTIMENT
 with tab4:
     st.header("Market Sentiment")
     try:
@@ -305,20 +283,25 @@ with tab4:
     except:
         st.warning("News temporarily unavailable")
 
+# TAB 5: PORTFOLIO P&L
 with tab_portfolio:
     st.header(f"{st.session_state.user}'s Portfolio")
     stock = st.selectbox("Select Stock", df["Company Name"])
     row = df[df["Company Name"] == stock].iloc[0]
+    
     col1, col2 = st.columns(2)
     with col1:
         shares = st.number_input("Shares Owned", min_value=1, value=100)
     with col2:
         buy_price = st.number_input("Your Buy Price", value=float(row["Record Price"]))
-    value = shares * row["Current Price"]
+
+    current_value = shares * row["Current Price"]
     profit = (row["Current Price"] - buy_price) * shares
-    st.metric("Current Value", f"₹{value:,.0f}")
-    st.metric("Profit/Loss", f"₹{profit:,.0f}", delta=f"{(profit/(buy_price*shares)*100):+.1f}%")
+    profit_pct = (profit / (buy_price * shares)) * 100 if buy_price > 0 else 0
+
+    st.metric("Current Value", f"₹{current_value:,.0f}")
+    st.metric("Profit/Loss", f"₹{profit:,.0f}", delta=f"{profit_pct:+.1f}%")
 
 # FINAL STATUS
-st.sidebar.success("PRIVATE APP ACTIVE")
-st.sidebar.info("Password Protected • Secret Link Only • Elite Access")
+st.sidebar.success("QUALSCORE ACTIVE")
+st.sidebar.info("Password • Watchlist • P&L • WhatsApp Alerts")
