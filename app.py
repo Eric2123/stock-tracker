@@ -1,4 +1,4 @@
-# app.py - TRUE FINAL - ORIGINAL KEPT 100% + YOUR 7 FEATURES ADDED
+# app.py - FINAL PRIVATE LEGEND - PASSWORD + ORIGINAL + 7 FEATURES
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -13,7 +13,18 @@ import time
 import base64
 from io import BytesIO
 
-# ==================== AUTO REFRESH (UNCHANGED) ====================
+# ==================== PASSWORD PROTECTION (CHANGE THIS!) ====================
+st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password</h2>", unsafe_allow_html=True)
+password = st.text_input("Password", type="password", placeholder="Enter secret password")
+
+# CHANGE THIS TO YOUR OWN PASSWORD
+SECRET_PASSWORD = "stockking123"  # CHANGE THIS NOW!
+
+if password != SECRET_PASSWORD:
+    st.error("Incorrect password. Access denied.")
+    st.stop()
+
+# ==================== AUTO REFRESH ====================
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = time.time()
 elapsed = time.time() - st.session_state.last_refresh
@@ -24,27 +35,26 @@ if elapsed >= 60:
 else:
     st.sidebar.caption(f"Auto-refresh in {refresh_in}s")
 
-# ==================== PAGE CONFIG + ANIMATED HEADER (NEW) ====================
+# ==================== PAGE CONFIG + ANIMATED HEADER ====================
 st.set_page_config(
     page_title="Stock Tracker Pro",
     page_icon="Chart increasing",
     layout="wide",
     initial_sidebar_state="expanded",
-    menu_items={'About': "# Stock Tracker Pro\nThe Ultimate Indian Stock Dashboard"}
+    menu_items={'About': "# Stock Tracker Pro\nPrivate Elite Dashboard"}
 )
 
-# ANIMATED HEADER + LOGO
 st.markdown("""
 <div style="text-align:center;padding:20px;background:linear-gradient(90deg,#1e88e5,#00d4ff);border-radius:15px;margin-bottom:20px;">
     <h1 style="color:white;margin:0;animation:glow 2s infinite alternate;">STOCK TRACKER PRO</h1>
-    <p style="color:white;margin:5px;font-size:18px;">Your Stocks. Live. Legendary.</p>
+    <p style="color:white;margin:5px;font-size:18px;">Private. Elite. Legendary.</p>
 </div>
 <style>@keyframes glow {from{text-shadow:0 0 10px #00d4ff;}to{text-shadow:0 0 30px #00ff00;}}</style>
 """, unsafe_allow_html=True)
 
-# ==================== MULTI-USER + WATCHLIST (NEW) ====================
+# ==================== MULTI-USER + WATCHLIST ====================
 if 'user' not in st.session_state:
-    st.session_state.user = "Trader"
+    st.session_state.user = "Elite Trader"
 if 'watchlist' not in st.session_state:
     st.session_state.watchlist = []
 
@@ -61,12 +71,12 @@ if st.sidebar.button("Add"):
             st.session_state.watchlist.append(add_watch)
             st.sidebar.success(f"{add_watch} added!")
     else:
-        st.sidebar.error("Not in list")
+        st.sidebar.error("Stock not found")
 
 for w in st.session_state.watchlist:
     st.sidebar.success(f"Star {w}")
 
-# ==================== ORIGINAL SIDEBAR (UNCHANGED) ====================
+# ==================== SIDEBAR UPLOAD + THEME + LIVE INDICES ====================
 st.sidebar.header("Upload pythonmaster.xlsx")
 uploaded_file = st.sidebar.file_uploader("Choose file", type=["xlsx"])
 if not uploaded_file:
@@ -102,7 +112,7 @@ if nifty and sensex:
 else:
     st.sidebar.warning("Loading live indices...")
 
-# ==================== ORIGINAL DATA PROCESSING (UNCHANGED) ====================
+# ==================== DATA PROCESSING ====================
 @st.cache_data(show_spinner=False)
 def process_data(file):
     file.seek(0)
@@ -134,7 +144,6 @@ def process_data(file):
             if data.empty: continue
             data.index = data.index.tz_localize(None)
             current = data["Close"].iloc[-1]
-            price_3m = data[data.index >= three_m]["Close"].iloc[0] if not data[data.index >= three_m].empty else None
             pct = ((current - row["Record Price"]) / row["Record Price"]) * 100
             results.append({
                 "Date of Publishing": row["Date of Publishing"].date(),
@@ -158,9 +167,9 @@ def process_data(file):
 
 with st.spinner("Processing your stocks..."):
     df = process_data(uploaded_file)
-st.success(f"Processed {len(df)} stocks successfully!")
+st.success(f"Processed {len(df)} stocks for {st.session_state.user}!")
 
-# ==================== ORIGINAL FILTERS (UNCHANGED) ====================
+# ==================== FILTERS ====================
 st.sidebar.markdown("### Select Stocks for Trends")
 selected_companies = st.sidebar.multiselect(
     "Choose companies",
@@ -180,10 +189,9 @@ filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 csv = df.to_csv(index=False).encode()
 st.sidebar.download_button("Download Full Report (CSV)", csv, "Stock_Report.csv", "text/csv")
 
-# ==================== ORIGINAL TABS + NEW PORTFOLIO TAB ====================
+# ==================== TABS ====================
 tab1, tab2, tab3, tab4, tab_portfolio = st.tabs(["Overview", "Trends", "Performance", "Sentiment", "Portfolio"])
 
-# TAB 1 - ORIGINAL OVERVIEW (100% SAME)
 with tab1:
     st.header("Dashboard Overview")
     col1, col2, col3 = st.columns(3)
@@ -207,7 +215,6 @@ with tab1:
     }).bar(subset=["Percent Change"], color=['#90EE90', '#FFB6C1'])
     st.dataframe(styled, use_container_width=True)
 
-# TAB 2 - ORIGINAL TRENDS + WHATSAPP SHARE (NEW)
 with tab2:
     st.header("Stock Trends & Price Tracker")
     for company in selected_companies:
@@ -216,7 +223,7 @@ with tab2:
         if row["Current Price"] >= row["target Price"]:
             st.success(f"TARGET HIT! {company} reached ₹{row['Current Price']:,}")
         elif row["Current Price"] >= row["target Price"] * 0.95:
-            st.error(f"NEAR TARGET! Only {(row['target Price'] - row['Current Price']):.0f} away!")
+            st.error(f"NEAR TARGET! Only ₹{row['target Price'] - row['Current Price']:.0f} away!")
         hist = yf.download(row["Ticker"], period="6mo")
         if not hist.empty:
             fig, ax = plt.subplots(figsize=(12, 5))
@@ -236,7 +243,7 @@ with tab2:
             wa_url = f"https://wa.me/?text={wa_msg.replace(' ', '%20')}"
             st.markdown(f'<a href="{wa_url}" target="_blank"><button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;">Share on WhatsApp</button></a>', unsafe_allow_html=True)
 
-            # ORIGINAL PRICE TRACKER
+            # PRICE TRACKER
             fig2, ax2 = plt.subplots(figsize=(12, 2))
             prices = [row["Record Price"], row["Current Price"], row["target Price"]]
             labels = ["Record", "Current", "Target"]
@@ -252,7 +259,6 @@ with tab2:
             st.pyplot(fig2)
         st.markdown("---")
 
-# TAB 3 & 4 - 100% ORIGINAL
 with tab3:
     st.header("Performance Analysis")
     st.bar_chart(filtered.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
@@ -299,9 +305,8 @@ with tab4:
     except:
         st.warning("News temporarily unavailable")
 
-# NEW PORTFOLIO TAB
 with tab_portfolio:
-    st.header(f"{st.session_state.user}'s Portfolio Calculator")
+    st.header(f"{st.session_state.user}'s Portfolio")
     stock = st.selectbox("Select Stock", df["Company Name"])
     row = df[df["Company Name"] == stock].iloc[0]
     col1, col2 = st.columns(2)
@@ -314,6 +319,6 @@ with tab_portfolio:
     st.metric("Current Value", f"₹{value:,.0f}")
     st.metric("Profit/Loss", f"₹{profit:,.0f}", delta=f"{(profit/(buy_price*shares)*100):+.1f}%")
 
-# OFFLINE + FINAL MESSAGE
-st.sidebar.success("ORIGINAL + 7 FEATURES = LEGENDARY")
-st.sidebar.info("Watchlist • WhatsApp Share • Portfolio Tab • News Images • Animated Header • Offline Ready")
+# FINAL STATUS
+st.sidebar.success("PRIVATE APP ACTIVE")
+st.sidebar.info("Password Protected • Secret Link Only • Elite Access")
