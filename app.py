@@ -1,4 +1,4 @@
-# app.py - FINAL QUALSCORE EDITION - LOGO + ALERTS + P&L
+# app.py - FINAL QUALSCORE EDITION - LOGO + ALERTS + P&L + FREE CHATBOX
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -16,7 +16,7 @@ from io import BytesIO
 # ==================== PASSWORD PROTECTION ====================
 st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password</h2>", unsafe_allow_html=True)
 password = st.text_input("Password", type="password", placeholder="Enter secret password")
-SECRET_PASSWORD = "stockking123"  # CHANGE THIS!
+SECRET_PASSWORD = "stockking123" # CHANGE THIS!
 if password != SECRET_PASSWORD:
     st.error("Incorrect password. Access denied.")
     st.stop()
@@ -44,12 +44,10 @@ st.markdown("""
 # ==================== USER + WATCHLIST ====================
 if 'user' not in st.session_state: st.session_state.user = "Elite Trader"
 if 'watchlist' not in st.session_state: st.session_state.watchlist = []
-
 user = st.sidebar.text_input("Your Name", value=st.session_state.user)
 if user != st.session_state.user:
     st.session_state.user = user
     st.sidebar.success(f"Welcome back, {user}!")
-
 st.sidebar.markdown("### Star Watchlist")
 add_watch = st.sidebar.text_input("Add to Watchlist")
 if st.sidebar.button("Add"):
@@ -126,8 +124,8 @@ def process_data(file):
         except: continue
     final_df = pd.DataFrame(results)
     final_df["Percent Change"] = ((final_df["Current Price"] - final_df["Record Price"]) / final_df["Record Price"] * 100).round(2)
-    final_df["Distance from Target (%)"] = ((final_df["Current Price"] - final_df["target Price"]) / final_df["target Price"] * 100).round(2)
-    final_df["Absolute Current Price (%)"] = final_df["Percent Change"]
+    final_df["Distance from Target ($)"] = ((final_df["Current Price"] - final_df["target Price"]) / final_df["target Price"] * 100).round(2)
+    final_df["Absolute Current Price ($)"] = final_df["Percent Change"]
     return final_df
 
 with st.spinner("Processing your stocks..."):
@@ -153,7 +151,9 @@ csv = df.to_csv(index=False).encode()
 st.sidebar.download_button("Download Report", csv, "Stock_Report.csv", "text/csv")
 
 # ==================== TABS ====================
-tab1, tab2, tab3, tab4, tab_portfolio = st.tabs(["Overview", "Trends", "Performance", "Sentiment", "Portfolio"])
+tab1, tab2, tab3, tab4, tab_portfolio, tab_chat = st.tabs([
+    "Overview", "Trends", "Performance", "Sentiment", "Portfolio", "Chat"
+])
 
 # TAB 1: OVERVIEW
 with tab1:
@@ -170,10 +170,10 @@ with tab1:
         fig_pie.update_layout(paper_bgcolor=bg_color, plot_bgcolor=bg_color, font_color=fg_color)
         st.plotly_chart(fig_pie, use_container_width=True)
     st.subheader("Performance Table")
-    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target (%)"]]
+    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target ($)"]]
     styled = disp.style.format({
         "Current Price": "₹{:.2f}", "target Price": "₹{:.2f}",
-        "Percent Change": "{:+.2f}%", "Distance from Target (%)": "{:+.2f}%"
+        "Percent Change": "{:+.2f}%", "Distance from Target ($)": "{:+.2f}%"
     }).bar(subset=["Percent Change"], color=['#90EE90', '#FFB6C1'])
     st.dataframe(styled, use_container_width=True)
 
@@ -183,7 +183,7 @@ with tab2:
     for company in selected_companies:
         row = df[df["Company Name"] == company].iloc[0]
         st.markdown(f"### {company}")
-        
+       
         # TARGET HIT + WHATSAPP ALERT
         if row["Current Price"] >= row["target Price"]:
             st.success(f"TARGET HIT! {company} reached ₹{row['Current Price']:,}")
@@ -198,7 +198,6 @@ with tab2:
             ''', unsafe_allow_html=True)
         elif row["Current Price"] >= row["target Price"] * 0.95:
             st.error(f"NEAR TARGET! Only ₹{row['target Price'] - row['Current Price']:.0f} away!")
-
         # 6-MONTH CHART
         hist = yf.download(row["Ticker"], period="6mo")
         if not hist.empty:
@@ -209,7 +208,6 @@ with tab2:
             ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
             ax.legend(facecolor=bg_color, labelcolor=fg_color)
             st.pyplot(fig)
-
             # WHATSAPP SHARE
             buf = BytesIO()
             fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
@@ -218,7 +216,6 @@ with tab2:
             wa_msg = f"*{company}* is at ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
             wa_url = f"https://wa.me/?text={wa_msg.replace(' ', '%20')}"
             st.markdown(f'<a href="{wa_url}" target="_blank"><button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;">Share on WhatsApp</button></a>', unsafe_allow_html=True)
-
             # PRICE TRACKER
             fig2, ax2 = plt.subplots(figsize=(12, 2))
             prices = [row["Record Price"], row["Current Price"], row["target Price"]]
@@ -247,7 +244,7 @@ with tab3:
         st.subheader("Top 5 Losers")
         st.dataframe(filtered.nsmallest(5, "Percent Change")[["Company Name", "Percent Change"]], use_container_width=True)
     st.subheader("Heatmap")
-    values = filtered["Absolute Current Price (%)"].fillna(0)
+    values = filtered["Absolute Current Price ($)"].fillna(0)
     norm = mcolors.TwoSlopeNorm(vmin=values.min(), vcenter=0, vmax=values.max())
     cols, rows = 6, (len(values) + 5) // 6
     fig, ax = plt.subplots(figsize=(16, rows * 1.8))
@@ -288,20 +285,57 @@ with tab_portfolio:
     st.header(f"{st.session_state.user}'s Portfolio")
     stock = st.selectbox("Select Stock", df["Company Name"])
     row = df[df["Company Name"] == stock].iloc[0]
-    
+   
     col1, col2 = st.columns(2)
     with col1:
         shares = st.number_input("Shares Owned", min_value=1, value=100)
     with col2:
         buy_price = st.number_input("Your Buy Price", value=float(row["Record Price"]))
-
     current_value = shares * row["Current Price"]
     profit = (row["Current Price"] - buy_price) * shares
     profit_pct = (profit / (buy_price * shares)) * 100 if buy_price > 0 else 0
-
     st.metric("Current Value", f"₹{current_value:,.0f}")
     st.metric("Profit/Loss", f"₹{profit:,.0f}", delta=f"{profit_pct:+.1f}%")
 
+# ==================== FREE CHATBOX TAB ====================
+with tab_chat:
+    st.header("QualSCORE Chat — FREE FOREVER")
+
+    # Initialize chat history
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = []
+
+    # Display chat messages
+    for message in st.session_state.chat_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Chat input
+    if prompt := st.chat_input("Ask about stocks, targets, or portfolio..."):
+        # Add user message
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Smart reply based on data
+        prompt_lower = prompt.lower()
+        reply = "I'm here to help! Try asking: 'Show Reliance trend' or 'What's my profit?'"
+
+        if any(stock in prompt_lower for stock in df["Company Name"].str.lower()):
+            for _, row in df.iterrows():
+                if row["Company Name"].lower() in prompt_lower:
+                    reply = f"**{row['Company Name']}**\nCurrent: ₹{row['Current Price']:,}\nTarget: ₹{row['target Price']:,}\nChange: {row['Percent Change']:+.2f}%"
+                    break
+        elif "profit" in prompt_lower or "portfolio" in prompt_lower:
+            reply = "Go to **Portfolio** tab → select stock → enter shares & buy price → see real-time profit!"
+        elif "target" in prompt_lower:
+            reply = "Check **Trends** tab → green button = TARGET HIT!"
+
+        # Add assistant reply
+        st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+        with st.chat_message("assistant"):
+            st.markdown(reply)
+
 # FINAL STATUS
 st.sidebar.success("QUALSCORE ACTIVE")
-st.sidebar.info("Password • Watchlist • P&L • WhatsApp Alerts")
+st.sidebar.info("Password • Watchlist • P&L • WhatsApp Alerts • FREE CHAT")
