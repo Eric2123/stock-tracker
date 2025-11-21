@@ -1,9 +1,9 @@
 streamlit
 pandas
 yfinance
-matplotlib
-plotly
-numpy
-textblob
+scikit-learn
 gnews
+textblob
+plotly
+matplotlib
 openpyxl
