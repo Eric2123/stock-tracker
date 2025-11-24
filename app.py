@@ -118,4 +118,4 @@ def process_data(file):
                 "Company Name": row["Company Name"],
                 "Ticker": ticker,
                 "Record Price": row["Record Price"],
-                "Current Price": round(current
+                "Current Price": round(current)
