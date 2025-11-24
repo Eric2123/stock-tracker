@@ -238,10 +238,10 @@ else:
 # --------------------------
 # FINISH CHART
 # --------------------------
-        ax.grid(True, alpha=0.3, color=line_color)
-        ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
-        ax.legend(facecolor=bg_color, labelcolor=fg_color)
-           st.pyplot(fig)
+    ax.grid(True, alpha=0.3, color=line_color)
+     ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
+     ax.legend(facecolor=bg_color, labelcolor=fg_color)
+     st.pyplot(fig)
 
             buf = BytesIO()
             fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
