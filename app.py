@@ -16,7 +16,7 @@ from io import BytesIO
 # ==================== PASSWORD PROTECTION ====================
 st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password</h2>", unsafe_allow_html=True)
 password = st.text_input("Password", type="password", placeholder="Enter secret password")
-SECRET_PASSWORD = "stockking123"  # CHANGE THIS!
+SECRET_PASSWORD = "admin"  # CHANGE THIS!
 if password != SECRET_PASSWORD:
     st.error("Incorrect password. Access denied.")
     st.stop()
