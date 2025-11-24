@@ -201,11 +201,47 @@ with tab2:
         if not hist.empty:
             fig, ax = plt.subplots(figsize=(12, 5))
             ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=2.5)
+            ax.axhline(
+    row["Record Price"],
+    color="#ff9800",
+    linestyle="--",
+    linewidth=2,
+    label=f"Record Price ₹{row['Record Price']}"
+)
+            
             ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']}")
-            ax.grid(True, alpha=0.3, color=line_color)
-            ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
-            ax.legend(facecolor=bg_color, labelcolor=fg_color)
-            st.pyplot(fig)
+            
+            pub_date = row["Date of Publishing"]
+if pub_date in hist.index:
+    pub_price = hist.loc[pub_date, "Close"]
+    ax.scatter(pub_date, pub_price, color="red", s=120, zorder=5)
+    ax.text(pub_date, pub_price,
+            f"  Published\n₹{pub_price:.2f}",
+            color="red",
+            fontsize=9,
+            fontweight="bold",
+            va="bottom")
+else:
+    # Find nearest date if exact date missing
+    nearest = hist.index.get_indexer([pub_date], method="nearest")[0]
+    nearest_date = hist.index[nearest]
+    pub_price = hist.loc[nearest_date, "Close"]
+    
+    ax.scatter(nearest_date, pub_price, color="red", s=120, zorder=5)
+    ax.text(nearest_date, pub_price,
+            f"  Published\n₹{pub_price:.2f}",
+            color="red",
+            fontsize=9,
+            fontweight="bold",
+            va="bottom")
+
+# --------------------------
+# FINISH CHART
+# --------------------------
+ax.grid(True, alpha=0.3, color=line_color)
+ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
+ax.legend(facecolor=bg_color, labelcolor=fg_color)
+st.pyplot(fig)
 
             buf = BytesIO()
             fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
