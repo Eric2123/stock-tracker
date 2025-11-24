@@ -202,11 +202,11 @@ with tab2:
             fig, ax = plt.subplots(figsize=(12, 5))
             ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=2.5)
             ax.axhline(
-    row["Record Price"],
-    color="#ff9800",
-    linestyle="--",
-    linewidth=2,
-    label=f"Record Price ₹{row['Record Price']}"
+          row["Record Price"],
+          color="#ff9800",
+          linestyle="--",
+          linewidth=2,
+          label=f"Record Price ₹{row['Record Price']}"
 )
             
             ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']}")
@@ -238,10 +238,10 @@ else:
 # --------------------------
 # FINISH CHART
 # --------------------------
-ax.grid(True, alpha=0.3, color=line_color)
-ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
-ax.legend(facecolor=bg_color, labelcolor=fg_color)
-st.pyplot(fig)
+        ax.grid(True, alpha=0.3, color=line_color)
+        ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
+        ax.legend(facecolor=bg_color, labelcolor=fg_color)
+           st.pyplot(fig)
 
             buf = BytesIO()
             fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
