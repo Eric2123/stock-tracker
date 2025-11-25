@@ -315,7 +315,7 @@ with tab2:
             ax.text(
                 dot_date,
                 pub_price,
-                f"  Published\n₹{pub_price:.2f}",
+                f"  Published\n%#8377;{pub_price:.2f}",
                 color="red",
                 fontsize=9,
                 fontweight="bold",
