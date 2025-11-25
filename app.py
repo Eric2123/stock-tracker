@@ -152,14 +152,23 @@ def process_data(file):
             # Compute Beta vs Nifty
             hist_stock = yf.Ticker(ticker).history(period="1y")
             hist_nifty = yf.Ticker("^NSEI").history(period="1y")
-            if not hist_stock.empty and not hist_nifty.empty and len(hist_stock) == len(hist_nifty):
+            if not hist_stock.empty and not hist_nifty.empty:
+                # Flatten columns if MultiIndex
+                if isinstance(hist_stock.columns, pd.MultiIndex):
+                    hist_stock.columns = hist_stock.columns.droplevel(1)
+                if isinstance(hist_nifty.columns, pd.MultiIndex):
+                    hist_nifty.columns = hist_nifty.columns.droplevel(1)
                 returns_stock = hist_stock["Close"].pct_change().dropna()
                 returns_nifty = hist_nifty["Close"].pct_change().dropna()
-                min_len = min(len(returns_stock), len(returns_nifty))
-                X = returns_nifty[:min_len].values.reshape(-1, 1)
-                y = returns_stock[:min_len].values
-                model = LinearRegression().fit(X, y)
-                beta = model.coef_[0]
+                # Align by index
+                common_idx = returns_stock.index.intersection(returns_nifty.index)
+                if len(common_idx) > 1:
+                    X = returns_nifty.loc[common_idx].values.reshape(-1, 1)
+                    y = returns_stock.loc[common_idx].values
+                    model = LinearRegression().fit(X, y)
+                    beta = model.coef_[0]
+                else:
+                    beta = 1.0
             else:
                 beta = 1.0
             
@@ -272,7 +281,10 @@ with tab2:
         end_str = datetime.now().strftime('%Y-%m-%d')
         hist = yf.download(row["Ticker"], start=start_str, end=end_str)
         if not hist.empty:
-            # Interactive Plotly Chart - Fix: Reset index to make Date a column
+            # Flatten MultiIndex columns if present
+            if isinstance(hist.columns, pd.MultiIndex):
+                hist.columns = hist.columns.droplevel(1)
+            # Interactive Plotly Chart - Reset index to make Date a column
             hist_plot = hist.reset_index()
             fig = px.line(hist_plot, x='Date', y='Close', title=f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}",
                           labels={'Close': 'Price (₹)', 'Date': 'Date'})
