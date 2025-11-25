@@ -118,7 +118,7 @@ def process_data(file):
                 "Current Price": round(current, 2),
                 "target Price": row["Target Price"],
                 "Index": row.get("Index", "Unknown"),
-                "Date of Publishing": row["Date of Publishing"]
+                "Date of Publishing": row["Date of Publishing"].date()
             })
         except: continue
     final_df = pd.DataFrame(results)
@@ -144,7 +144,7 @@ cutoff = datetime(1900, 1, 1)
 if period == "Last 3 Months": cutoff = datetime.today() - timedelta(days=90)
 elif period == "Last 6 Months": cutoff = datetime.today() - timedelta(days=180)
 elif period == "Last 1 Year": cutoff = datetime.today() - timedelta(days=365)
-filtered = df[df["Date of Publishing"] >= cutoff]
+filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 
 csv = df.to_csv(index=False).encode()
 st.sidebar.download_button("Download Report", csv, "Stock_Report.csv", "text/csv")
@@ -197,16 +197,19 @@ with tab2:
         elif row["Current Price"] >= row["target Price"] * 0.95:
             st.error(f"NEAR TARGET! Only ₹{row['target Price'] - row['Current Price']:.0f} away!")
 
-        hist = yf.download(row["Ticker"], period="1y")
+        publish_date = row["Date of Publishing"]
+        start_str = publish_date.strftime('%Y-%m-%d')
+        end_str = datetime.now().strftime('%Y-%m-%d')
+        hist = yf.download(row["Ticker"], start=start_str, end=end_str)
         if not hist.empty:
             fig, ax = plt.subplots(figsize=(12, 5))
-            ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=2.5)
-            ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']:,}")
-            ax.axhline(row["Record Price"], color="orange", linestyle="-", linewidth=2, label=f"Record ₹{row['Record Price']:,}")
-            pub_date = row["Date of Publishing"]
-            ax.scatter(pub_date, row["Record Price"], color="red", label=f"Buy Date")
+            ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=2.5, label='Price')
+            ax.axhline(row["Record Price"], color="orange", linestyle="-", linewidth=2, label=f"Record ₹{row['Record Price']:.2f}")
+            ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']:.2f}")
+            publish_dt = pd.to_datetime(publish_date)
+            ax.scatter(publish_dt, row["Record Price"], color='red', s=200, marker='o', zorder=5, label='Buy Date')
             ax.grid(True, alpha=0.3, color=line_color)
-            ax.set_title(f"{company} - 1 Year Trend", color=fg_color, fontsize=16)
+            ax.set_title(f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}", color=fg_color, fontsize=16)
             ax.legend(facecolor=bg_color, labelcolor=fg_color)
             st.pyplot(fig)
 
@@ -231,6 +234,8 @@ with tab2:
             ax2.axis("off")
             ax2.set_title(f"{company} - Price Tracker", color=fg_color)
             st.pyplot(fig2)
+        else:
+            st.warning(f"No historical data available for {company} from {start_str}")
         st.markdown("---")
 
 # TAB 3: PERFORMANCE
