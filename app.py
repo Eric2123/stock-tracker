@@ -311,17 +311,15 @@ with tab2:
                 dot_date = hist.index[nearest_idx]
                 pub_price = hist.loc[dot_date, "Close"]
 
-            ax.scatter(dot_date, pub_price, color="red", s=120, zorder=5)
             ax.text(
-                dot_date,
-                pub_price,
-                f"  Published\n%#8377;{pub_price:.2f}",
-                color="red",
-                fontsize=9,
-                fontweight="bold",
-                va="bottom",
-            )
-
+           dot_date,
+           pub_price,
+           f"  Published\n&#8377;{pub_price:.2f}",
+           color="red",
+           fontsize=9,
+           fontweight="bold",
+            va="bottom",
+)
             ax.grid(True, alpha=0.3, color=line_color)
             ax.set_title(f"{company} - 6 Month Trend", color=fg_color, fontsize=16)
             ax.legend(facecolor=bg_color, labelcolor=fg_color)
