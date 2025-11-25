@@ -272,14 +272,16 @@ with tab2:
         end_str = datetime.now().strftime('%Y-%m-%d')
         hist = yf.download(row["Ticker"], start=start_str, end=end_str)
         if not hist.empty:
-            # Interactive Plotly Chart
-            fig = px.line(hist, x=hist.index, y="Close", title=f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}",
-                          labels={"Close": "Price (₹)", "index": "Date"})
+            # Interactive Plotly Chart - Fix: Reset index to make Date a column
+            hist_plot = hist.reset_index()
+            fig = px.line(hist_plot, x='Date', y='Close', title=f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}",
+                          labels={'Close': 'Price (₹)', 'Date': 'Date'})
             fig.add_hline(y=row["Record Price"], line_dash="solid", line_color="orange",
                           annotation_text=f"Record ₹{row['Record Price']:.2f}", annotation_position="top left")
             fig.add_hline(y=row["target Price"], line_dash="dash", line_color="orange",
                           annotation_text=f"Target ₹{row['target Price']:.2f}", annotation_position="top right")
-            fig.add_scatter(x=[publish_date], y=[row["Record Price"]], mode="markers", marker=dict(color="red", size=10),
+            publish_dt = pd.to_datetime(publish_date)
+            fig.add_scatter(x=[publish_dt], y=[row["Record Price"]], mode="markers", marker=dict(color="red", size=10),
                             name="Buy Date")
             fig.update_layout(
                 plot_bgcolor=plot_bg,
@@ -292,10 +294,6 @@ with tab2:
             fig.update_yaxes(gridcolor=line_color)
             st.plotly_chart(fig, use_container_width=True)
 
-            buf = BytesIO()
-            fig.write_image(buf, format='png')
-            buf.seek(0)
-            b64 = base64.b64encode(buf.read()).decode()
             wa_msg = f"*{company}* is at ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
             wa_url = f"https://wa.me/?text={wa_msg.replace(' ', '%20')}"
             st.markdown(f'<a href="{wa_url}" target="_blank"><button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;">Share on WhatsApp</button></a>', unsafe_allow_html=True)
