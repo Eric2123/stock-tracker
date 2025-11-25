@@ -204,7 +204,7 @@ with tab2:
             ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']:,}")
             ax.axhline(row["Record Price"], color="orange", linestyle="-", linewidth=2, label=f"Record ₹{row['Record Price']:,}")
             pub_date = row["Date of Publishing"]
-            ax.scatter(pub_date, row["Record Price"], color="red", s=150, zorder=5, label=f"Buy Date")
+            ax.scatter(pub_date, row["Record Price"], color="red", label=f"Buy Date")
             ax.grid(True, alpha=0.3, color=line_color)
             ax.set_title(f"{company} - 1 Year Trend", color=fg_color, fontsize=16)
             ax.legend(facecolor=bg_color, labelcolor=fg_color)
