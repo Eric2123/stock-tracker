@@ -6,12 +6,15 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 from textblob import TextBlob
 from gnews import GNews
 import time
 import base64
 from io import BytesIO
+from sklearn.linear_model import LinearRegression
 
 # ==================== PASSWORD PROTECTION ====================
 st.markdown("<h2 style='text-align:center;color:#00d4ff;'>Enter Password</h2>", unsafe_allow_html=True)
@@ -60,17 +63,43 @@ if st.sidebar.button("Add"):
 for w in st.session_state.watchlist:
     st.sidebar.success(f"Star {w}")
 
-# ==================== UPLOAD + THEME + INDICES ====================
+# ==================== UPLOAD + THEME + LAYOUT + INDICES ====================
 st.sidebar.header("Upload pythonmaster.xlsx")
 uploaded_file = st.sidebar.file_uploader("Choose file", type=["xlsx"])
 if not uploaded_file:
     st.error("Please upload your Excel file to continue!")
     st.stop()
 
-theme = st.sidebar.radio("Theme", ["Light", "Dark"], index=1)
-bg_color = "#1a1a1a" if theme == "Dark" else "white"
-fg_color = "white" if theme == "Dark" else "black"
-line_color = "white" if theme == "Dark" else "black"
+# Customizable Themes
+theme_presets = st.sidebar.selectbox("Theme Preset", ["Dark", "Light", "Bullish Green", "Bearish Red"])
+if theme_presets == "Dark":
+    bg_color = "#1a1a1a"
+    fg_color = "white"
+    line_color = "white"
+    plot_bg = "#1a1a1a"
+    primary_color = "#00d4ff"
+elif theme_presets == "Light":
+    bg_color = "white"
+    fg_color = "black"
+    line_color = "black"
+    plot_bg = "white"
+    primary_color = "#1e88e5"
+elif theme_presets == "Bullish Green":
+    bg_color = "#0f2e1a"
+    fg_color = "#90EE90"
+    line_color = "#90EE90"
+    plot_bg = "#0f2e1a"
+    primary_color = "#00ff00"
+else:  # Bearish Red
+    bg_color = "#2e0f0f"
+    fg_color = "#FFB6C1"
+    line_color = "#FFB6C1"
+    plot_bg = "#2e0f0f"
+    primary_color = "#ff0000"
+
+# Layout Toggle
+full_width = st.sidebar.checkbox("Full Width Layout", value=True)
+
 plt.rcParams.update({
     'text.color': fg_color, 'axes.labelcolor': fg_color,
     'xtick.color': fg_color, 'ytick.color': fg_color,
@@ -111,6 +140,29 @@ def process_data(file):
         if not ticker.endswith((".BO", ".NS")): ticker += ".BO"
         try:
             current = yf.Ticker(ticker).history(period="1d")["Close"].iloc[-1]
+            
+            # Compute Volatility (std dev of last 30 days returns)
+            hist_30d = yf.Ticker(ticker).history(period="1mo")
+            if not hist_30d.empty:
+                returns_30d = hist_30d["Close"].pct_change().dropna()
+                volatility = returns_30d.std() * np.sqrt(252) * 100  # Annualized
+            else:
+                volatility = 0.0
+            
+            # Compute Beta vs Nifty
+            hist_stock = yf.Ticker(ticker).history(period="1y")
+            hist_nifty = yf.Ticker("^NSEI").history(period="1y")
+            if not hist_stock.empty and not hist_nifty.empty and len(hist_stock) == len(hist_nifty):
+                returns_stock = hist_stock["Close"].pct_change().dropna()
+                returns_nifty = hist_nifty["Close"].pct_change().dropna()
+                min_len = min(len(returns_stock), len(returns_nifty))
+                X = returns_nifty[:min_len].values.reshape(-1, 1)
+                y = returns_stock[:min_len].values
+                model = LinearRegression().fit(X, y)
+                beta = model.coef_[0]
+            else:
+                beta = 1.0
+            
             results.append({
                 "Company Name": row["Company Name"],
                 "Ticker": ticker,
@@ -118,7 +170,9 @@ def process_data(file):
                 "Current Price": round(current, 2),
                 "target Price": row["Target Price"],
                 "Index": row.get("Index", "Unknown"),
-                "Date of Publishing": row["Date of Publishing"].date()
+                "Date of Publishing": row["Date of Publishing"].date(),
+                "Volatility (%)": round(volatility, 2),
+                "Beta": round(beta, 2)
             })
         except: continue
     final_df = pd.DataFrame(results)
@@ -163,16 +217,32 @@ with tab1:
     with col3:
         top = df.loc[df["Percent Change"].idxmax()]
         st.metric("Top Gainer", top["Company Name"], f"{top['Percent Change']:+.2f}%")
+    
+    # Quick Stats Cards
+    with st.expander("Quick Risk Stats", expanded=False):
+        col_r1, col_r2, col_r3 = st.columns(3)
+        with col_r1:
+            avg_vol = df["Volatility (%)"].mean()
+            st.metric("Avg Volatility", f"{avg_vol:.2f}%")
+        with col_r2:
+            avg_beta = df["Beta"].mean()
+            st.metric("Avg Beta", f"{avg_beta:.2f}")
+        with col_r3:
+            high_risk = len(df[df["Volatility (%)"] > 30])
+            st.metric("High Risk Stocks", high_risk)
+    
     if df["Index"].nunique() > 1:
         fig_pie = px.pie(df["Index"].value_counts().reset_index(), names="Index", values="count", hole=0.4,
                          color_discrete_sequence=px.colors.sequential.Blues)
-        fig_pie.update_layout(paper_bgcolor=bg_color, plot_bgcolor=bg_color, font_color=fg_color)
+        fig_pie.update_layout(paper_bgcolor=plot_bg, plot_bgcolor=plot_bg, font_color=fg_color)
         st.plotly_chart(fig_pie, use_container_width=True)
+    
     st.subheader("Performance Table")
-    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target ($)"]]
+    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target ($)", "Volatility (%)", "Beta"]]
     styled = disp.style.format({
         "Current Price": "₹{:.2f}", "target Price": "₹{:.2f}",
-        "Percent Change": "{:+.2f}%", "Distance from Target ($)": "{:+.2f}%"
+        "Percent Change": "{:+.2f}%", "Distance from Target ($)": "{:+.2f}%",
+        "Volatility (%)": "{:.2f}%"
     }).bar(subset=["Percent Change"], color=['#90EE90', '#FFB6C1'])
     st.dataframe(styled, use_container_width=True)
 
@@ -202,19 +272,28 @@ with tab2:
         end_str = datetime.now().strftime('%Y-%m-%d')
         hist = yf.download(row["Ticker"], start=start_str, end=end_str)
         if not hist.empty:
-            fig, ax = plt.subplots(figsize=(12, 5))
-            ax.plot(hist.index, hist["Close"], color="#00d4ff", linewidth=2.5, label='Price')
-            ax.axhline(row["Record Price"], color="orange", linestyle="-", linewidth=2, label=f"Record ₹{row['Record Price']:.2f}")
-            ax.axhline(row["target Price"], color="orange", linestyle="--", linewidth=2, label=f"Target ₹{row['target Price']:.2f}")
-            publish_dt = pd.to_datetime(publish_date)
-            ax.scatter(publish_dt, row["Record Price"], color='red', s=200, marker='o', zorder=5, label='Buy Date')
-            ax.grid(True, alpha=0.3, color=line_color)
-            ax.set_title(f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}", color=fg_color, fontsize=16)
-            ax.legend(facecolor=bg_color, labelcolor=fg_color)
-            st.pyplot(fig)
+            # Interactive Plotly Chart
+            fig = px.line(hist, x=hist.index, y="Close", title=f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}",
+                          labels={"Close": "Price (₹)", "index": "Date"})
+            fig.add_hline(y=row["Record Price"], line_dash="solid", line_color="orange",
+                          annotation_text=f"Record ₹{row['Record Price']:.2f}", annotation_position="top left")
+            fig.add_hline(y=row["target Price"], line_dash="dash", line_color="orange",
+                          annotation_text=f"Target ₹{row['target Price']:.2f}", annotation_position="top right")
+            fig.add_scatter(x=[publish_date], y=[row["Record Price"]], mode="markers", marker=dict(color="red", size=10),
+                            name="Buy Date")
+            fig.update_layout(
+                plot_bgcolor=plot_bg,
+                paper_bgcolor=plot_bg,
+                font_color=fg_color,
+                hovermode="x unified",
+                legend=dict(bgcolor=plot_bg, font_color=fg_color)
+            )
+            fig.update_xaxes(gridcolor=line_color)
+            fig.update_yaxes(gridcolor=line_color)
+            st.plotly_chart(fig, use_container_width=True)
 
             buf = BytesIO()
-            fig.savefig(buf, format='png', bbox_inches='tight', facecolor=bg_color)
+            fig.write_image(buf, format='png')
             buf.seek(0)
             b64 = base64.b64encode(buf.read()).decode()
             wa_msg = f"*{company}* is at ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
@@ -224,7 +303,7 @@ with tab2:
             fig2, ax2 = plt.subplots(figsize=(12, 2))
             prices = [row["Record Price"], row["Current Price"], row["target Price"]]
             labels = ["Record", "Current", "Target"]
-            colors = ["red", "#1e88e5", "green"]
+            colors = ["red", primary_color, "green"]
             for p, l, c in zip(prices, labels, colors):
                 ax2.scatter(p, 0, color=c, s=200, edgecolors=line_color, linewidth=2)
                 ax2.text(p, 0.15, f"{l}\n₹{p:,}", ha="center", va="bottom", fontweight="bold", color=fg_color)
