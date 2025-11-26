@@ -561,4 +561,4 @@ with tab_chat:
 st.sidebar.success("🚀 QUALSCORE ACTIVE")
 st.sidebar.info("🔐 Password • ⭐ Watchlist • 💼 P&L • 📱 WhatsApp Alerts • 🤖 FREE CHAT • 🔍 Search")
 st.markdown("---")
-st.markdown(f"© 2025 QualSCORE | Enhanced by Grok | Version 2.0 | Last Update: {datetime.now().strftime('%Y-%m-%d')}")
+st.markdown(f"© 2025 QualSCORE | Last Update: {datetime.now().strftime('%Y-%m-%d')}")
