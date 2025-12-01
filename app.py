@@ -31,7 +31,7 @@ st.markdown("""
         font-size: 1.2em;
     }
     .stMetric > div > div > div {
-        color: white !important;
+        color: black !important;
     }
     .metric-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
