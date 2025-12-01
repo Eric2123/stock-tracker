@@ -38,7 +38,7 @@ st.markdown("""
         padding: 1rem;
         border-radius: 10px;
         text-align: center;
-        color: white;
+        color: black;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         transition: transform 0.2s;
     }
