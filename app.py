@@ -221,7 +221,7 @@ box-shadow:0 6px 30px rgba(0,0,0,0.04);">
 
 <h1 style="margin:0;color:#1F3A5F;">QualSCORE</h1>
 <p style="margin:6px 0 0;color:#6B7280;">
-Institutional-grade Equity Intelligence Platform
+Equity research internal stock dashboard
 </p>
 
 </div>
