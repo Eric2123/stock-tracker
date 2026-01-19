@@ -211,12 +211,19 @@ else:
 # ==================== PAGE CONFIG + ENHANCED QUALSCORE LOGO ====================
 st.set_page_config(page_title="QualSCORE", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
-<div style="text-align:center;padding:30px;background:linear-gradient(135deg,#1e88e5,#00d4ff,#667eea);border-radius:20px;margin-bottom:30px;box-shadow:0 8px 32px rgba(0,0,0,0.1);">
-    <h1 style="color:white;margin:0;font-size:48px; class='glow-text'>QualSCORE</h1>
-    <p style="color:white;margin:5px;font-size:20px;font-style:italic;">FUNDAMENTAL • TECHNICAL • QUALITATIVE</p>
-    <div style="margin-top:10px;">
-        <span style="background:rgba(255,255,255,0.2);padding:5px 10px;border-radius:15px;font-size:14px;">Advanced Analytics Dashboard</span>
-    </div>
+<div style="
+background:#FFFFFF;
+padding:30px;
+border-radius:18px;
+border:1px solid #E5E7EB;
+margin-bottom:30px;
+box-shadow:0 6px 30px rgba(0,0,0,0.04);">
+
+<h1 style="margin:0;color:#1F3A5F;">QualSCORE</h1>
+<p style="margin:6px 0 0;color:#6B7280;">
+Institutional-grade Equity Intelligence Platform
+</p>
+
 </div>
 """, unsafe_allow_html=True)
 
@@ -256,31 +263,12 @@ for w in st.session_state.watchlist:
 
 # Enhanced Themes with Better Presets
 theme_presets = st.sidebar.selectbox("🎨 Theme Preset", ["Dark Nebula", "Light Aurora", "Bullish Forest", "Bearish Crimson"])
-if theme_presets == "Dark Nebula":
-    bg_color = "#0a0a0a"
-    fg_color = "#e0e0e0"
-    line_color = "#00d4ff"
-    plot_bg = "#0a0a0a"
-    primary_color = "#00d4ff"
-elif theme_presets == "Light Aurora":
-    bg_color = "#f8f9fa"
-    fg_color = "#2c3e50"
-    line_color = "#1e88e5"
-    plot_bg = "#f8f9fa"
-    primary_color = "#1e88e5"
-elif theme_presets == "Bullish Forest":
-    bg_color = "#1a3c34"
-    fg_color = "#e8f5e8"
-    line_color = "#4caf50"
-    plot_bg = "#1a3c34"
-    primary_color = "#4caf50"
-else:  # Bearish Crimson
-    bg_color = "#3d0a0a"
-    fg_color = "#ffebee"
-    line_color = "#f44336"
-    plot_bg = "#3d0a0a"
-    primary_color = "#f44336"
-
+  theme_presets == "Dark Nebula":
+    bg_color = "#F6F8FB"
+    plot_bg = "#FFFFFF"
+    fg_color = "#1C1C1C"
+    line_color = "#4C6EF5"
+    primary_color = "#1F3A5F"
 # Layout Toggle
 full_width = st.sidebar.checkbox("🌐 Full Width Layout", value=True)
 
