@@ -88,67 +88,105 @@ def load_master_data():
 MASTER_DF = load_master_data()
 
 
-# ==================== CUSTOM CSS FOR ADVANCED UI/UX ====================
+# ==================== PREMIUM FINTECH UI THEME ====================
 st.markdown("""
 <style>
-    .main .block-container {
-        padding-top: 2rem;
-        padding-right: 2rem;
-        padding-left: 2rem;
-        padding-bottom: 1rem;
-    }
-    .stMetric > label {
-        color: white !important;
-        font-size: 1.2em;
-    }
-    .stMetric > div > div > div {
-        color: black !important;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        text-align: center;
-        color: black;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        transition: transform 0.2s;
-    }
-    .metric-card:hover {
-        transform: translateY(-2px);
-    }
-    .stExpander > div > div {
-        border-radius: 10px;
-        border: 1px solid #ddd;
-    }
-    .stButton > button {
-        background: linear-gradient(90deg, #1e88e5, #00d4ff);
-        color: white;
-        border: none;
-        border-radius: 20px;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-    .stButton > button:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    .glow-text {
-        text-shadow: 0 0 10px currentColor;
-        animation: glow 2s infinite alternate;
-    }
-    @keyframes glow {
-        from { text-shadow: 0 0 10px #00d4ff; }
-        to { text-shadow: 0 0 30px #00ff00; }
-    }
-    .alert-card {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+/* Global */
+html, body, [class*="css"] {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background-color: #F6F8FB;
+    color: #1C1C1C;
+}
+
+/* Main container */
+.main .block-container {
+    padding: 2.5rem 3rem;
+    max-width: 1400px;
+}
+
+/* Headings */
+h1, h2, h3 {
+    color: #1F3A5F;
+    font-weight: 600;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #FFFFFF;
+    border-right: 1px solid #E5E7EB;
+}
+
+/* Cards */
+.metric-card {
+    background: #FFFFFF;
+    padding: 1.25rem;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    border: 1px solid #E5E7EB;
+}
+
+/* Metrics */
+.stMetric {
+    background: #FFFFFF;
+    padding: 1rem;
+    border-radius: 14px;
+    border: 1px solid #E5E7EB;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #1F3A5F;
+    color: #FFFFFF;
+    border-radius: 10px;
+    padding: 0.45rem 1.2rem;
+    font-weight: 500;
+    border: none;
+}
+.stButton > button:hover {
+    background-color: #162C48;
+}
+
+/* Tables */
+.dataframe {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+/* Expanders */
+.stExpander {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+/* Alerts */
+.alert-card {
+    background-color: #F1F5F9;
+    border-left: 5px solid #4C6EF5;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+/* Chat bubbles */
+.stChatMessage {
+    background: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    font-weight: 500;
+    color: #6B7280;
+}
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #1F3A5F;
+    border-bottom: 3px solid #4C6EF5;
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # ==================== PASSWORD PROTECTION ====================
 st.markdown("<h2 style='text-align:center;color:#00d4ff; class='glow-text'>Enter Password</h2>", unsafe_allow_html=True)
