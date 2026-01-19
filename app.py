@@ -78,6 +78,13 @@ STOCK_MASTER = [
     {"Date of Publishing":"18-01-2026","Company Name":"AGI Greenpac Ltd (Rework)","Ticker":"AGI.BO","Index":"Microcap","Record Price":670,"Target Price":812.5}
 ]
 
+@st.cache_data
+def load_master_data():
+    df = pd.DataFrame(STOCK_MASTER)
+    df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True, errors='coerce')
+    return df.dropna(subset=["Date of Publishing"])
+
+MASTER_DF = load_master_data()
 # ────────────────────────────────────────────────
 #  PROFESSIONAL DARK THEME + TYPOGRAPHY
 # ────────────────────────────────────────────────
