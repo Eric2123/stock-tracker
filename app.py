@@ -16,6 +16,7 @@ import base64
 from io import BytesIO
 from sklearn.linear_model import LinearRegression
 import streamlit.components.v1 as components  # For custom HTML/JS if needed
+
 # ==================== HARD-CODED STOCK MASTER ====================
 STOCK_MASTER = [
     {"Date of Publishing":"10-05-2024","Company Name":"Thomas Cook (India) Ltd","Ticker":"THOMASCOOK.BO","Index":"Microcap","Record Price":201,"Target Price":316},
@@ -81,452 +82,548 @@ STOCK_MASTER = [
 @st.cache_data
 def load_master_data():
     df = pd.DataFrame(STOCK_MASTER)
-    df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True, errors='coerce')
-    return df.dropna(subset=["Date of Publishing"])
+    df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True)
+    return df
 
 MASTER_DF = load_master_data()
-# ────────────────────────────────────────────────
-#  PROFESSIONAL DARK THEME + TYPOGRAPHY
-# ────────────────────────────────────────────────
 
-st.set_page_config(page_title="QualSCORE • Professional", layout="wide", page_icon="📈", initial_sidebar_state="expanded")
 
+# ==================== CUSTOM CSS FOR ADVANCED UI/UX ====================
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-    html, body, [class*="st-"] {
-        font-family: 'Inter', sans-serif !important;
+<style>
+    .main .block-container {
+        padding-top: 2rem;
+        padding-right: 2rem;
+        padding-left: 2rem;
+        padding-bottom: 1rem;
     }
-    .stApp {
-        background: #0d1117;
-        color: #c9d1d9;
+    .stMetric > label {
+        color: white !important;
+        font-size: 1.2em;
     }
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 1450px !important;
-    }
-    h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.5px; color: #ffffff !important; }
-    h2 { font-size: 1.8rem; font-weight: 600; color: #e6edf3 !important; }
-    h3 { font-size: 1.4rem; font-weight: 600; color: #c9d1d9 !important; }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        background: #161b22;
-        border-radius: 10px;
-        padding: 6px;
-        gap: 4px;
-        border: 1px solid #30363d;
-    }
-    .stTabs [data-baseweb="tab"] {
-        color: #8b949e !important;
-        border-radius: 6px !important;
-        padding: 10px 16px !important;
-    }
-    .stTabs [aria-selected="true"] {
-        background: #21262d !important;
-        color: #ffffff !important;
-        border-bottom: 2px solid #58a6ff !important;
-    }
-    
-    .card {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 10px;
-        padding: 1.25rem;
-        margin-bottom: 1.25rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    .stMetric > div > div > div {
+        color: black !important;
     }
     .metric-card {
-        background: linear-gradient(145deg, #1f2937, #111827);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
         border-radius: 10px;
-        padding: 1.2rem;
         text-align: center;
-        border: 1px solid #30363d;
+        color: black;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
     }
-    .metric-value {
-        font-size: 2.1rem;
-        font-weight: 700;
-        color: #58a6ff;
+    .metric-card:hover {
+        transform: translateY(-2px);
     }
-    .positive { color: #3fb950 !important; }
-    .negative { color: #f85149 !important; }
-    
-    hr {
-        border-color: #30363d !important;
-        margin: 2rem 0;
+    .stExpander > div > div {
+        border-radius: 10px;
+        border: 1px solid #ddd;
     }
     .stButton > button {
-        background: #238636;
+        background: linear-gradient(90deg, #1e88e5, #00d4ff);
         color: white;
         border: none;
-        border-radius: 6px;
-        padding: 0.55rem 1.1rem;
-        font-weight: 500;
+        border-radius: 20px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        transition: all 0.3s;
     }
     .stButton > button:hover {
-        background: #2ea043;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
-    </style>
+    .glow-text {
+        text-shadow: 0 0 10px currentColor;
+        animation: glow 2s infinite alternate;
+    }
+    @keyframes glow {
+        from { text-shadow: 0 0 10px #00d4ff; }
+        to { text-shadow: 0 0 30px #00ff00; }
+    }
+    .alert-card {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  PASSWORD + SIDEBAR
-# ────────────────────────────────────────────────
-
-if "password_ok" not in st.session_state:
-    st.session_state.password_ok = False
-
-col_pw = st.columns([1,2,1])[1]
-with col_pw:
-    st.markdown("<h3 style='text-align:center'>QualSCORE Access</h3>", unsafe_allow_html=True)
-    pw = st.text_input("Enter password", type="password", key="pw_input")
-    if st.button("Login", use_container_width=True):
-        if pw == "admin":           # ← change this in production
-            st.session_state.password_ok = True
-            st.rerun()
-        else:
-            st.error("Incorrect password")
-
-if not st.session_state.password_ok:
+# ==================== PASSWORD PROTECTION ====================
+st.markdown("<h2 style='text-align:center;color:#00d4ff; class='glow-text'>Enter Password</h2>", unsafe_allow_html=True)
+password = st.text_input("Password", type="password", placeholder="Enter secret password")
+SECRET_PASSWORD = "admin"  # CHANGE THIS!
+if password != SECRET_PASSWORD:
+    st.error("❌ Incorrect password. Access denied.")
     st.stop()
 
-# ────────────────────────────────────────────────
-#  HEADER
-# ────────────────────────────────────────────────
+# ==================== AUTO REFRESH WITH PROGRESS BAR ====================
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = time.time()
+elapsed = time.time() - st.session_state.last_refresh
+refresh_progress = min(elapsed / 60, 1.0)
+st.sidebar.progress(refresh_progress)
+if elapsed >= 60:
+    st.session_state.last_refresh = time.time()
+    st.rerun()
+else:
+    st.sidebar.caption(f"🔄 Auto-refresh in {60 - int(elapsed)}s")
 
+# ==================== PAGE CONFIG + ENHANCED QUALSCORE LOGO ====================
+st.set_page_config(page_title="QualSCORE", page_icon="📈", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
-<div style="text-align:center; padding:1.8rem 0 1.2rem;">
-    <h1>QualSCORE</h1>
-    <p style="color:#8b949e; font-size:1.15rem; margin-top:0.4rem;">
-        Fundamental • Technical • Qualitative Analysis • Professional Edition
-    </p>
+<div style="text-align:center;padding:30px;background:linear-gradient(135deg,#1e88e5,#00d4ff,#667eea);border-radius:20px;margin-bottom:30px;box-shadow:0 8px 32px rgba(0,0,0,0.1);">
+    <h1 style="color:white;margin:0;font-size:48px; class='glow-text'>QualSCORE</h1>
+    <p style="color:white;margin:5px;font-size:20px;font-style:italic;">FUNDAMENTAL • TECHNICAL • QUALITATIVE</p>
+    <div style="margin-top:10px;">
+        <span style="background:rgba(255,255,255,0.2);padding:5px 10px;border-radius:15px;font-size:14px;">Advanced Analytics Dashboard</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────
-#  SIDEBAR (cleaner)
-# ────────────────────────────────────────────────
+# ==================== USER + WATCHLIST + SEARCH FEATURE ====================
+if 'user' not in st.session_state: 
+    st.session_state.user = "Elite Trader"
+if 'watchlist' not in st.session_state: 
+    st.session_state.watchlist = []
+user = st.sidebar.text_input("👤 Your Name", value=st.session_state.user)
+if user != st.session_state.user:
+    st.session_state.user = user
+    st.sidebar.success(f"👋 Welcome back, {user}!")
 
-with st.sidebar:
-    st.header("Dashboard Controls")
-    
-    user_name = st.text_input("Your Name", value=st.session_state.get("user_name", "Analyst"))
-    st.session_state.user_name = user_name
-    
-    st.markdown("**Watchlist**")
-    watchlist_input = st.multiselect(
-        "Starred companies",
-        options=MASTER_DF["Company Name"].tolist(),
-        default=st.session_state.get("watchlist", []),
-        placeholder="Select to highlight"
-    )
-    st.session_state.watchlist = watchlist_input
+# New Feature: Quick Search for Companies
+st.sidebar.markdown("🔍 **Quick Search**")
+search_query = st.sidebar.text_input("Search Company")
+if search_query:
+    matches = df[df["Company Name"].str.contains(search_query, case=False, na=False)]["Company Name"].tolist()
+    if matches:
+        selected_companies = st.sidebar.multiselect("Search Results", matches, default=matches[:3])
+    else:
+        st.sidebar.warning("No matches found.")
 
-    st.markdown("---")
-    st.caption("Data refresh")
-    if st.button("🔄 Refresh All Data", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
+st.sidebar.markdown("⭐ **Star Watchlist**")
+add_watch = st.sidebar.text_input("Add to Watchlist")
+if st.sidebar.button("Add ⭐"):
+    if 'df' in locals() and add_watch in df["Company Name"].values:
+        if add_watch not in st.session_state.watchlist:
+            st.session_state.watchlist.append(add_watch)
+            st.sidebar.success(f"⭐ {add_watch} added!")
+    else:
+        st.sidebar.error("Stock not found")
+for w in st.session_state.watchlist:
+    st.sidebar.success(f"⭐ {w}")
 
-    st.caption(f"Last refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+# ==================== UPLOAD + ENHANCED THEME + LAYOUT + INDICES ====================
 
-# ────────────────────────────────────────────────
-#  DATA PROCESSING (your original logic preserved)
-# ────────────────────────────────────────────────
+# Enhanced Themes with Better Presets
+theme_presets = st.sidebar.selectbox("🎨 Theme Preset", ["Dark Nebula", "Light Aurora", "Bullish Forest", "Bearish Crimson"])
+if theme_presets == "Dark Nebula":
+    bg_color = "#0a0a0a"
+    fg_color = "#e0e0e0"
+    line_color = "#00d4ff"
+    plot_bg = "#0a0a0a"
+    primary_color = "#00d4ff"
+elif theme_presets == "Light Aurora":
+    bg_color = "#f8f9fa"
+    fg_color = "#2c3e50"
+    line_color = "#1e88e5"
+    plot_bg = "#f8f9fa"
+    primary_color = "#1e88e5"
+elif theme_presets == "Bullish Forest":
+    bg_color = "#1a3c34"
+    fg_color = "#e8f5e8"
+    line_color = "#4caf50"
+    plot_bg = "#1a3c34"
+    primary_color = "#4caf50"
+else:  # Bearish Crimson
+    bg_color = "#3d0a0a"
+    fg_color = "#ffebee"
+    line_color = "#f44336"
+    plot_bg = "#3d0a0a"
+    primary_color = "#f44336"
 
-@st.cache_data(ttl=300)
-def process_data(df_master):
+# Layout Toggle
+full_width = st.sidebar.checkbox("🌐 Full Width Layout", value=True)
+
+plt.rcParams.update({
+    'text.color': fg_color, 'axes.labelcolor': fg_color,
+    'xtick.color': fg_color, 'ytick.color': fg_color,
+    'axes.edgecolor': line_color, 'figure.facecolor': bg_color,
+    'axes.facecolor': bg_color
+})
+
+@st.cache_data(ttl=15)
+def get_indices():
+    try:
+        n = yf.Ticker("^NSEI").history(period="1d")["Close"].iloc[-1]
+        s = yf.Ticker("^BSESN").history(period="1d")["Close"].iloc[-1]
+        return round(n, 2), round(s, 2)
+    except: 
+        return None, None
+
+nifty, sensex = get_indices()
+if nifty and sensex:
+    st.sidebar.metric("📊 **NIFTY 50**", f"₹{nifty:,.0f}")
+    st.sidebar.metric("📈 **SENSEX**", f"₹{sensex:,.0f}")
+else:
+    st.sidebar.warning("⏳ Loading indices...")
+
+# New Feature: Manual Refresh Button
+if st.sidebar.button("🔄 Refresh Data Now"):
+    st.cache_data.clear()
+    st.rerun()
+
+# ==================== DATA PROCESSING WITH PROGRESS ====================
+@st.cache_data(show_spinner=False)
+def process_data(df):
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    required = ["Company Name", "Ticker", "Record Price", "Target Price", "Date of Publishing"]
+    if "Index" not in df.columns: 
+        df["Index"] = "Unknown"
+    missing = [c for c in required if c not in df.columns]
+    if missing: 
+        st.error(f"❌ Missing columns: {missing}"); 
+        st.stop()
+    df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True, errors='coerce')
+    df = df.dropna(subset=["Date of Publishing"])
     results = []
-    progress = st.progress(0)
-    total = len(df_master)
-    
-    for i, row in df_master.iterrows():
+    progress_bar = st.progress(0)
+    total = len(df)
+    for i, (_, row) in enumerate(df.iterrows()):
         ticker = str(row["Ticker"]).strip()
-        if not ticker.endswith((".BO", ".NS")):
+        if not ticker.endswith((".BO", ".NS")): 
             ticker += ".BO"
         try:
-            current = yf.Ticker(ticker).history(period="5d")["Close"].iloc[-1]
+            current = yf.Ticker(ticker).history(period="1d")["Close"].iloc[-1]
             
+            # Compute Volatility (std dev of last 30 days returns)
             hist_30d = yf.Ticker(ticker).history(period="1mo")
-            volatility = hist_30d["Close"].pct_change().std() * np.sqrt(252) * 100 if not hist_30d.empty else 0
+            if not hist_30d.empty:
+                returns_30d = hist_30d["Close"].pct_change().dropna()
+                volatility = returns_30d.std() * np.sqrt(252) * 100  # Annualized
+            else:
+                volatility = 0.0
             
+            # Compute Beta vs Nifty
             hist_stock = yf.Ticker(ticker).history(period="1y")
             hist_nifty = yf.Ticker("^NSEI").history(period="1y")
-            beta = 1.0
             if not hist_stock.empty and not hist_nifty.empty:
-                ret_s = hist_stock["Close"].pct_change().dropna()
-                ret_n = hist_nifty["Close"].pct_change().dropna()
-                common = ret_s.index.intersection(ret_n.index)
-                if len(common) > 10:
-                    X = ret_n.loc[common].values.reshape(-1,1)
-                    y = ret_s.loc[common].values
-                    beta = LinearRegression().fit(X, y).coef_[0]
+                # Flatten columns if MultiIndex
+                if isinstance(hist_stock.columns, pd.MultiIndex):
+                    hist_stock.columns = hist_stock.columns.droplevel(1)
+                if isinstance(hist_nifty.columns, pd.MultiIndex):
+                    hist_nifty.columns = hist_nifty.columns.droplevel(1)
+                returns_stock = hist_stock["Close"].pct_change().dropna()
+                returns_nifty = hist_nifty["Close"].pct_change().dropna()
+                # Align by index
+                common_idx = returns_stock.index.intersection(returns_nifty.index)
+                if len(common_idx) > 1:
+                    X = returns_nifty.loc[common_idx].values.reshape(-1, 1)
+                    y = returns_stock.loc[common_idx].values
+                    model = LinearRegression().fit(X, y)
+                    beta = model.coef_[0]
+                else:
+                    beta = 1.0
+            else:
+                beta = 1.0
             
             results.append({
                 "Company Name": row["Company Name"],
                 "Ticker": ticker,
                 "Record Price": row["Record Price"],
                 "Current Price": round(current, 2),
-                "Target Price": row["Target Price"],
+                "target Price": row["Target Price"],
                 "Index": row.get("Index", "Unknown"),
                 "Date of Publishing": row["Date of Publishing"].date(),
-                "Volatility (%)": round(volatility, 1),
+                "Volatility (%)": round(volatility, 2),
                 "Beta": round(beta, 2)
             })
-        except:
-            pass
-        progress.progress((i+1)/total)
-    
-    final = pd.DataFrame(results)
-    final["Percent Change"] = ((final["Current Price"] - final["Record Price"]) / final["Record Price"] * 100).round(1)
-    final["Distance from Target (%)"] = ((final["Current Price"] - final["Target Price"]) / final["Target Price"] * 100).round(1)
-    return final
+        except: 
+            continue
+        progress_bar.progress((i + 1) / total)
+    final_df = pd.DataFrame(results)
+    final_df["Percent Change"] = ((final_df["Current Price"] - final_df["Record Price"]) / final_df["Record Price"] * 100).round(2)
+    final_df["Distance from Target ($)"] = ((final_df["Current Price"] - final_df["target Price"]) / final_df["target Price"] * 100).round(2)
+    final_df["Absolute Current Price ($)"] = final_df["Percent Change"]
+    return final_df
 
-with st.spinner("Loading market data..."):
+with st.spinner("🔄 Processing your stocks... Hold on for advanced insights!"):
     df = process_data(MASTER_DF)
+st.success(f"✅ Processed {len(df)} stocks for {st.session_state.user}!")
 
-# ────────────────────────────────────────────────
-#  TABS (your original structure — only styling improved)
-# ────────────────────────────────────────────────
+# New Feature: Quick Export to PDF (simulated via download)
+csv = df.to_csv(index=False).encode()
+st.sidebar.download_button("📥 Download Report (CSV)", csv, "Stock_Report.csv", "text/csv")
+# For PDF, use simple base64, but keep CSV for now
 
-tab1, tab2, tab3, tab4, tab_port, tab_chat = st.tabs([
-    "Overview", "Trends & Alerts", "Performance", "Sentiment", "Portfolio", "AI Chat"
+# ==================== FILTERS ====================
+st.sidebar.markdown("🔧 **Filters**")
+selected_companies = st.sidebar.multiselect(
+    "Choose companies", df["Company Name"].unique(),
+    default=(st.session_state.watchlist + list(df["Company Name"].head(3).tolist()))[:3]
+)
+if not selected_companies: 
+    selected_companies = df["Company Name"].head(1).tolist()
+
+period = st.sidebar.selectbox("📅 Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
+cutoff = datetime(1900, 1, 1)
+if period == "Last 3 Months": 
+    cutoff = datetime.today() - timedelta(days=90)
+elif period == "Last 6 Months": 
+    cutoff = datetime.today() - timedelta(days=180)
+elif period == "Last 1 Year": 
+    cutoff = datetime.today() - timedelta(days=365)
+filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
+
+# ==================== TABS ====================
+tab1, tab2, tab3, tab4, tab_portfolio, tab_chat = st.tabs([
+    "📊 Overview", "📈 Trends", "🏆 Performance", "📰 Sentiment", "💼 Portfolio", "🤖 Chat"
 ])
 
-# ───── Overview ─────
+# TAB 1: OVERVIEW - ENHANCED WITH CARDS
 with tab1:
-    st.subheader("Market Overview")
+    st.header("🚀 Dashboard Overview")
+    # New Feature: Insight Cards
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('<div class="metric-card">Total Stocks<br><h2 style="margin:0;">' + str(len(df)) + '</h2></div>', unsafe_allow_html=True)
+    with col2:
+        avg_return = f"{df['Percent Change'].mean():+.2f}%"
+        color = "green" if df['Percent Change'].mean() > 0 else "red"
+        st.markdown(f'<div class="metric-card">Avg Return<br><h2 style="margin:0;color:{color};">{avg_return}</h2></div>', unsafe_allow_html=True)
+    with col3:
+        top = df.loc[df["Percent Change"].idxmax()]
+        st.markdown(f'<div class="metric-card">Top Gainer<br><h2 style="margin:0;">{top["Company Name"]}</h2><p style="margin:0;">{top["Percent Change"]:+.2f}%</p></div>', unsafe_allow_html=True)
     
-    cols = st.columns(4)
-    with cols[0]:
-        with st.container():
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.metric("Total Stocks", len(df))
-            st.markdown('</div>', unsafe_allow_html=True)
-    
-    with cols[1]:
-        avg_ret = df["Percent Change"].mean()
-        st.metric("Average Return", f"{avg_ret:+.1f}%", delta_color="normal" if avg_ret >= 0 else "inverse")
-    
-    with cols[2]:
-        top_g = df.loc[df["Percent Change"].idxmax()]
-        st.metric("Top Gainer", f"{top_g['Percent Change']:+.1f}%", f"{top_g['Company Name']}")
-    
-    with cols[3]:
-        tgt_hit = len(df[df["Current Price"] >= df["Target Price"]])
-        st.metric("Target Hits", tgt_hit)
-    
-    st.markdown("### Quick Risk Profile")
-    col_r1, col_r2, col_r3 = st.columns(3)
-    with col_r1: st.metric("Avg Volatility", f"{df['Volatility (%)'].mean():.1f}%")
-    with col_r2: st.metric("Avg Beta", f"{df['Beta'].mean():.2f}")
-    with col_r3: st.metric("High Risk (>35% vol)", len(df[df["Volatility (%)"] > 35]))
+    # Quick Stats Cards
+    with st.expander("⚠️ Quick Risk Stats", expanded=False):
+        col_r1, col_r2, col_r3 = st.columns(3)
+        with col_r1:
+            avg_vol = df["Volatility (%)"].mean()
+            st.metric("Avg Volatility", f"{avg_vol:.2f}%")
+        with col_r2:
+            avg_beta = df["Beta"].mean()
+            st.metric("Avg Beta", f"{avg_beta:.2f}")
+        with col_r3:
+            high_risk = len(df[df["Volatility (%)"] > 30])
+            st.metric("High Risk Stocks", high_risk)
     
     if df["Index"].nunique() > 1:
-        fig_pie = px.pie(df, names="Index", hole=0.45, title="Stocks by Index")
-        fig_pie.update_layout(
-            plot_bgcolor="#161b22", paper_bgcolor="#0d1117",
-            font_color="#c9d1d9", height=380
-        )
+        fig_pie = px.pie(df["Index"].value_counts().reset_index(), names="Index", values="count", hole=0.4,
+                         color_discrete_sequence=px.colors.sequential.Blues)
+        fig_pie.update_layout(paper_bgcolor=plot_bg, plot_bgcolor=plot_bg, font_color=fg_color)
         st.plotly_chart(fig_pie, use_container_width=True)
     
-    st.subheader("All Stocks")
-    styled = df.style.format({
-        "Current Price": "₹{:,.1f}",
-        "Target Price": "₹{:,.1f}",
-        "Percent Change": "{:+.1f}%",
-        "Distance from Target (%)": "{:+.1f}%",
-        "Volatility (%)": "{:.1f}%"
-    }).bar(subset=["Percent Change"], color=["#f85149", "#3fb950"], vmin=-50, vmax=150)
+    st.subheader("📋 Performance Table")
+    disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target ($)", "Volatility (%)", "Beta"]]
+    styled = disp.style.format({
+        "Current Price": "₹{:.2f}", "target Price": "₹{:.2f}",
+        "Percent Change": "{:+.2f}%", "Distance from Target ($)": "{:+.2f}%",
+        "Volatility (%)": "{:.2f}%"
+    }).bar(subset=["Percent Change"], color=['#4caf50', '#f44336'])
     st.dataframe(styled, use_container_width=True)
 
-# ───── Trends ───── (your original full logic kept)
+# TAB 2: TRENDS + TARGET ALERT - ENHANCED ALERTS
 with tab2:
-    st.subheader("Stock Trends & Target Tracker")
-    
-    selected_comp = st.multiselect(
-        "Select companies to display",
-        options=df["Company Name"].tolist(),
-        default=st.session_state.watchlist[:4] if st.session_state.watchlist else df["Company Name"].head(4).tolist()
-    )
-    
-    if not selected_comp:
-        st.info("Select at least one company")
-    else:
-        for company in selected_comp:
-            row = df[df["Company Name"] == company].iloc[0]
-            with st.expander(f"{company} • Current: ₹{row['Current Price']:,.1f}", expanded=len(selected_comp)<=3):
-                if row["Current Price"] >= row["Target Price"]:
-                    st.success(f"🎯 TARGET ACHIEVED — ₹{row['Current Price']:,.1f}")
-                elif row["Current Price"] >= row["Target Price"] * 0.95:
-                    st.warning(f"Approaching target — {row['Target Price'] - row['Current Price']:.0f} away")
-                
-                start_date = row["Date of Publishing"].strftime("%Y-%m-%d")
-                hist = yf.download(row["Ticker"], start=start_date)
-                
-                if not hist.empty:
-                    fig = px.line(hist.reset_index(), x="Date", y="Close",
-                                  title=f"Price since {start_date}")
-                    fig.add_hline(y=row["Record Price"], line_dash="dot", line_color="#f9c851",
-                                  annotation_text=f"Entry ₹{row['Record Price']:,.1f}")
-                    fig.add_hline(y=row["Target Price"], line_dash="dash", line_color="#3fb950",
-                                  annotation_text=f"Target ₹{row['Target Price']:,.1f}")
-                    fig.update_layout(
-                        height=480, plot_bgcolor="#161b22", paper_bgcolor="#0d1117",
-                        font_color="#c9d1d9", hovermode="x unified"
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                
-                # Your original price tracker mini chart
-                fig2, ax2 = plt.subplots(figsize=(10, 2.2))
-                prices = [row["Record Price"], row["Current Price"], row["Target Price"]]
-                labels = ["Entry", "Current", "Target"]
-                colors = ["#f85149", "#58a6ff", "#3fb950"]
-                for p, lbl, c in zip(prices, labels, colors):
-                    ax2.scatter(p, 0, s=180, color=c, edgecolors="#c9d1d9", linewidth=2)
-                    ax2.text(p, 0.18, f"{lbl}\n₹{p:,.0f}", ha="center", va="bottom", color="#e6edf3")
-                ax2.axhline(0, color="#30363d", lw=1.5)
-                ax2.set_xlim(min(prices)*0.92, max(prices)*1.08)
-                ax2.set_ylim(-0.4, 0.6)
-                ax2.axis("off")
-                st.pyplot(fig2)
+    st.header("📈 Stock Trends & Price Tracker")
+    for company in selected_companies:
+        row = df[df["Company Name"] == company].iloc[0]
+        st.markdown(f"### {company}")
 
-# ───── Performance, Sentiment, Portfolio, Chat ─────
-# (kept exactly your original logic — only wrapped metrics in cards where it makes sense)
+        if row["Current Price"] >= row["target Price"]:
+            st.success(f"🎯 TARGET HIT! {company} reached ₹{row['Current Price']:,}")
+            alert = f"QUALSCORE ALERT: {company} HIT TARGET! Current: ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
+            wa_link = f"https://wa.me/?text={alert.replace(' ', '%20')}"
+            st.markdown(f'''
+            <a href="{wa_link}" target="_blank">
+                <button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                    📱 Send WhatsApp Alert
+                </button>
+            </a>
+            ''', unsafe_allow_html=True)
+            st.markdown('<div class="alert-card">🚨 New Feature: Target Achieved! Consider rebalancing.</div>', unsafe_allow_html=True)
+        elif row["Current Price"] >= row["target Price"] * 0.95:
+            st.error(f"⚠️ NEAR TARGET! Only ₹{row['target Price'] - row['Current Price']:.0f} away!")
 
+        publish_date = row["Date of Publishing"]
+        start_str = publish_date.strftime('%Y-%m-%d')
+        end_str = datetime.now().strftime('%Y-%m-%d')
+        hist = yf.download(row["Ticker"], start=start_str, end=end_str)
+        if not hist.empty:
+            # Flatten MultiIndex columns if present
+            if isinstance(hist.columns, pd.MultiIndex):
+                hist.columns = hist.columns.droplevel(1)
+            # Interactive Plotly Chart - Reset index to make Date a column
+            hist_plot = hist.reset_index()
+            fig = px.line(hist_plot, x='Date', y='Close', title=f"{company} - Trend from {publish_date.strftime('%Y-%m-%d')}",
+                          labels={'Close': 'Price (₹)', 'Date': 'Date'})
+            fig.add_hline(y=row["Record Price"], line_dash="solid", line_color="orange",
+                          annotation_text=f"Record ₹{row['Record Price']:.2f}", annotation_position="top left")
+            fig.add_hline(y=row["target Price"], line_dash="dash", line_color="orange",
+                          annotation_text=f"Target ₹{row['target Price']:.2f}", annotation_position="top right")
+            publish_dt = pd.to_datetime(publish_date)
+            fig.add_scatter(x=[publish_dt], y=[row["Record Price"]], mode="markers", marker=dict(color="red", size=10),
+                            name="Buy Date")
+            fig.update_layout(
+                plot_bgcolor=plot_bg,
+                paper_bgcolor=plot_bg,
+                font_color=fg_color,
+                hovermode="x unified",
+                legend=dict(bgcolor=plot_bg, font_color=fg_color)
+            )
+            fig.update_xaxes(gridcolor=line_color)
+            fig.update_yaxes(gridcolor=line_color)
+            st.plotly_chart(fig, use_container_width=True)
+
+            wa_msg = f"*{company}* is at ₹{row['Current Price']:,} | Target: ₹{row['target Price']:,}"
+            wa_url = f"https://wa.me/?text={wa_msg.replace(' ', '%20')}"
+            st.markdown(f'<a href="{wa_url}" target="_blank"><button style="background:#25D366;color:white;padding:10px 20px;border:none;border-radius:10px;">📱 Share on WhatsApp</button></a>', unsafe_allow_html=True)
+
+            fig2, ax2 = plt.subplots(figsize=(12, 2))
+            prices = [row["Record Price"], row["Current Price"], row["target Price"]]
+            labels = ["Record", "Current", "Target"]
+            colors = ["red", primary_color, "green"]
+            for p, l, c in zip(prices, labels, colors):
+                ax2.scatter(p, 0, color=c, s=200, edgecolors=line_color, linewidth=2)
+                ax2.text(p, 0.15, f"{l}\n₹{p:,}", ha="center", va="bottom", fontweight="bold", color=fg_color)
+            ax2.axhline(0, color=line_color, linewidth=1.5)
+            ax2.set_xlim(min(prices)*0.9, max(prices)*1.1)
+            ax2.set_ylim(-0.5, 0.5)
+            ax2.axis("off")
+            ax2.set_title(f"{company} - Price Tracker", color=fg_color)
+            st.pyplot(fig2)
+        else:
+            st.warning(f"⚠️ No historical data available for {company} from {start_str}")
+        st.markdown("---")
+
+# TAB 3: PERFORMANCE - ENHANCED HEATMAP
 with tab3:
-    st.subheader("Performance Ranking")
-    st.bar_chart(df.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**Top 5 Gainers**")
-        st.dataframe(df.nlargest(5, "Percent Change")[["Company Name", "Percent Change"]])
-    with c2:
-        st.markdown("**Top 5 Losers**")
-        st.dataframe(df.nsmallest(5, "Percent Change")[["Company Name", "Percent Change"]])
-    
-    # Your original heatmap
-    st.subheader("Performance Heatmap")
-    values = df["Percent Change"].fillna(0)
+    st.header("🏆 Performance Analysis")
+    st.bar_chart(filtered.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("🔥 Top 5 Gainers")
+        st.dataframe(filtered.nlargest(5, "Percent Change")[["Company Name", "Percent Change"]], use_container_width=True)
+    with col2:
+        st.subheader("📉 Top 5 Losers")
+        st.dataframe(filtered.nsmallest(5, "Percent Change")[["Company Name", "Percent Change"]], use_container_width=True)
+    st.subheader("🔥 Performance Heatmap")
+    values = filtered["Absolute Current Price ($)"].fillna(0)
     norm = mcolors.TwoSlopeNorm(vmin=values.min(), vcenter=0, vmax=values.max())
     cols, rows = 6, (len(values) + 5) // 6
-    fig, ax = plt.subplots(figsize=(16, max(3, rows * 1.6)))
-    for i, (name, val) in enumerate(zip(df["Company Name"], values)):
+    fig, ax = plt.subplots(figsize=(16, rows * 1.8))
+    for i, (comp, val) in enumerate(zip(filtered["Company Name"], values)):
         r, c = divmod(i, cols)
         color = plt.get_cmap("RdYlGn")(norm(val))
-        ax.add_patch(plt.Rectangle((c, rows - r - 1), 1, 1, facecolor=color, edgecolor="#0d1117"))
-        ax.text(c + 0.5, rows - r - 0.5, f"{name}\n{val:+.1f}%", ha="center", va="center",
-                fontsize=9, color="black" if abs(val) < 60 else "white")
-    ax.set_xlim(0, cols)
-    ax.set_ylim(0, rows)
-    ax.axis("off")
+        ax.add_patch(plt.Rectangle((c, rows - r - 1), 1, 1, facecolor=color, edgecolor="white"))
+        ax.text(c + 0.5, rows - r - 0.5, f"{comp}\n{val:+.1f}%", ha="center", va="center", fontsize=9, color="black")
+    ax.set_xlim(0, cols); ax.set_ylim(0, rows); ax.axis("off")
+    ax.set_title("Performance Heatmap", color=fg_color, fontsize=16)
     st.pyplot(fig)
 
+# TAB 4: SENTIMENT - ENHANCED WITH ICONS
 with tab4:
-    # Your original news + sentiment logic (unchanged except better container)
-    st.subheader("Market Sentiment — India")
+    st.header("📰 Market Sentiment")
     try:
         news = GNews(language='en', country='IN', max_results=8)
         items = news.get_news("Indian stock market")
         sentiments = []
         for item in items:
             pol = TextBlob(item['title']).sentiment.polarity
-            label = "Positive" if pol > 0.12 else "Negative" if pol < -0.12 else "Neutral"
-            icon = "🟢" if pol > 0.12 else "🔴" if pol < -0.12 else "⚪"
+            label = "Positive" if pol > 0.1 else "Negative" if pol < -0.1 else "Neutral"
+            icon = "😊" if pol > 0.1 else "😞" if pol < -0.1 else "😐"
             sentiments.append(pol)
             with st.expander(f"{icon} {item['title']}"):
-                st.caption(item['publisher']['title'])
-                st.write(f"Sentiment: **{label}** ({pol:+.2f})")
-        if sentiments:
-            avg = np.mean(sentiments)
-            if avg > 0.1:
-                st.success(f"Overall market sentiment: Positive ({avg:+.2f})")
-            elif avg < -0.1:
-                st.error(f"Overall market sentiment: Negative ({avg:+.2f})")
-            else:
-                st.info(f"Overall market sentiment: Neutral ({avg:+.2f})")
+                st.write(f"**Source:** {item['publisher']['title']}")
+                if 'image' in item and item['image']:
+                    st.image(item['image'], use_column_width=True)
+                st.write(f"→ **{label}** ({pol:+.2f})")
+        avg = np.mean(sentiments)
+        if avg > 0.1: 
+            st.success(f"🌟 Overall: Positive ({avg:+.2f})")
+        elif avg < -0.1: 
+            st.error(f"😟 Overall: Negative ({avg:+.2f})")
+        else: 
+            st.info(f"⚖️ Overall: Neutral ({avg:+.2f})")
     except:
-        st.warning("News feed currently unavailable")
+        st.warning("📰 News temporarily unavailable. Check connection.")
 
-with tab_port:
-    st.subheader(f"Portfolio Calculator — {st.session_state.user_name}")
-    stock = st.selectbox("Stock", df["Company Name"])
+# TAB 5: PORTFOLIO P&L - ENHANCED WITH CHART
+with tab_portfolio:
+    st.header(f"💼 {st.session_state.user}'s Portfolio")
+    stock = st.selectbox("Select Stock", df["Company Name"])
     row = df[df["Company Name"] == stock].iloc[0]
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        shares = st.number_input("Number of shares", min_value=1, value=100, step=10)
-    with c2:
-        buy_price = st.number_input("Your purchase price (₹)", value=float(row["Record Price"]), step=0.5)
-    
-    curr_val = shares * row["Current Price"]
-    pnl = (row["Current Price"] - buy_price) * shares
-    pnl_pct = (pnl / (buy_price * shares)) * 100 if buy_price > 0 else 0
-    
-    mc1, mc2 = st.columns(2)
-    with mc1:
-        st.metric("Current Position Value", f"₹{curr_val:,.0f}")
-    with mc2:
-        st.metric("Profit / Loss", f"₹{pnl:,.0f}", delta=f"{pnl_pct:+.1f}%",
-                  delta_color="normal" if pnl >= 0 else "inverse")
-    
-    # Your original P&L bar
-    fig_pnl, ax_pnl = plt.subplots(figsize=(9, 4))
-    cats = ["Invested", "Current Value", "P&L"]
-    vals = [buy_price * shares, curr_val, pnl]
-    cols = ["#f85149" if v < 0 else "#3fb950" for v in vals]
-    ax_pnl.bar(cats, vals, color=cols)
-    ax_pnl.axhline(0, color="#6e7681", lw=1)
-    ax_pnl.set_title(f"P&L Breakdown — {stock}")
-    ax_pnl.set_facecolor("#161b22")
-    fig_pnl.set_facecolor("#0d1117")
-    for t in ax_pnl.get_xticklabels() + ax_pnl.get_yticklabels():
-        t.set_color("#c9d1d9")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        shares = st.number_input("📊 Shares Owned", min_value=1, value=100)
+    with col2:
+        buy_price = st.number_input("💰 Your Buy Price", value=float(row["Record Price"]))
+    current_value = shares * row["Current Price"]
+    profit = (row["Current Price"] - buy_price) * shares
+    profit_pct = (profit / (buy_price * shares)) * 100 if buy_price > 0 else 0
+    st.metric("💎 Current Value", f"₹{current_value:,.0f}")
+    st.metric("💹 Profit/Loss", f"₹{profit:,.0f}", delta=f"{profit_pct:+.1f}%")
+
+    # New Feature: Simple P&L Bar Chart
+    fig_pnl, ax_pnl = plt.subplots(figsize=(8, 4))
+    categories = ['Investment', 'Current Value', 'Profit/Loss']
+    values = [buy_price * shares, current_value, profit]
+    colors = ['#f44336' if v < 0 else '#4caf50' for v in values]
+    ax_pnl.bar(categories, values, color=colors)
+    ax_pnl.set_title(f"{stock} - P&L Breakdown", color=fg_color)
     st.pyplot(fig_pnl)
 
+# ==================== SUPER SMART FREE CHATBOX - ENHANCED WITH EMOJIS ====================
 with tab_chat:
-    # Your original chat logic (kept 100%)
-    st.subheader("QualSCORE Assistant")
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-    
-    for msg in st.session_state.chat_history:
+    st.header("🤖 QualSCORE AI Assistant — 100% FREE & Super Smart")
+
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = []
+
+    for msg in st.session_state.chat_messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-    
-    if prompt := st.chat_input("Ask about any stock, performance, targets…"):
-        st.session_state.chat_history.append({"role": "user", "content": prompt})
+
+    if prompt := st.chat_input("💭 Ask anything: 'Best stock?', 'Target hit?', 'Nifty?', 'Reliance?'"):
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
-        
-        reply = "Ask me about your stocks!"
-        p = prompt.lower()
-        found = False
-        
-        for _, r in df.iterrows():
-            if r["Company Name"].lower() in p or r["Ticker"].lower().replace(".bo","") in p:
-                status = "🎯 TARGET HIT" if r["Current Price"] >= r["Target Price"] else \
-                         "Approaching target" if r["Current Price"] >= r["Target Price"]*0.95 else "On track"
-                reply = f"**{r['Company Name']}**\nCurrent: ₹{r['Current Price']:,.1f}\nTarget: ₹{r['Target Price']:,.1f}\nGain: {r['Percent Change']:+.1f}%\nStatus: **{status}**"
-                found = True
+
+        p = prompt.lower().strip()
+        reply = "💡 Ask me anything about your stocks! Try: 'Best gainer?' or 'Reliance status'."
+
+        matched = False
+        for _, row in df.iterrows():
+            if row["Company Name"].lower() in p or row["Ticker"].lower().replace(".ns","").replace(".bo","") in p:
+                status = "🎯 TARGET HIT!" if row["Current Price"] >= row["target Price"] else "⚠️ NEAR TARGET!" if row["Current Price"] >= row["target Price"]*0.95 else "✅ On Track"
+                reply = f"**{row['Company Name']}**\n💰 Current: ₹{row['Current Price']:,}\n🎯 Target: ₹{row['target Price']:,}\n📊 Gain: {row['Percent Change']:+.2f}%\n📈 Status: **{status}**"
+                matched = True
                 break
-        
-        if not found:
-            if any(w in p for w in ["best", "top", "gainer"]):
+
+        if not matched:
+            if any(x in p for x in ["best", "top", "gainer"]):
                 top = df.loc[df["Percent Change"].idxmax()]
-                reply = f"Top performer: **{top['Company Name']}** {top['Percent Change']:+.1f}%"
-            elif any(w in p for w in ["worst", "loser"]):
+                reply = f"🏆 TOP GAINER: **{top['Company Name']}** +{top['Percent Change']:+.2f}% 🔥"
+            elif any(x in p for x in ["worst", "loser"]):
                 bot = df.loc[df["Percent Change"].idxmin()]
-                reply = f"Worst performer: **{bot['Company Name']}** {bot['Percent Change']:+.1f}%"
-            elif "target" in p and "hit" in p:
-                hits = df[df["Current Price"] >= df["Target Price"]]["Company Name"].tolist()
-                reply = "Target achieved: " + (", ".join(hits) if hits else "None yet")
-        
-        st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                reply = f"📉 WORST: **{bot['Company Name']}** {bot['Percent Change']:+.2f}% 😞"
+            elif "target hit" in p:
+                hits = df[df["Current Price"] >= df["target Price"]]["Company Name"].tolist()
+                reply = f"🎯 TARGET HITS: {', '.join(hits) if hits else 'None yet! Keep watching!'}"
+            elif "nifty" in p or "sensex" in p:
+                reply = f"📊 NIFTY 50: ₹{nifty:,.0f}\n📈 SENSEX: ₹{sensex:,.0f}"
+            elif "profit" in p or "portfolio" in p:
+                reply = "💼 Go to Portfolio tab → enter shares & buy price → see your profit! 📈"
+
+        st.session_state.chat_messages.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
 
+# FINAL STATUS - ENHANCED FOOTER
+st.sidebar.success("🚀 QUALSCORE ACTIVE")
+st.sidebar.info("🔐 Password • ⭐ Watchlist • 💼 P&L • 📱 WhatsApp Alerts • 🤖 FREE CHAT • 🔍 Search")
 st.markdown("---")
-st.caption("QualSCORE Professional • Internal Use • Last update: " + datetime.now().strftime("%Y-%m-%d %H:%M"))
+st.markdown(f"© 2025 QualSCORE | Last Update: {datetime.now().strftime('%Y-%m-%d')}")
