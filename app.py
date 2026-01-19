@@ -264,11 +264,12 @@ for w in st.session_state.watchlist:
 # Enhanced Themes with Better Presets
 theme_presets = st.sidebar.selectbox("🎨 Theme Preset", ["Dark Nebula"])
 theme_presets == "Dark Nebula"
-    bg_color = "#F6F8FB"
-    plot_bg = "#FFFFFF"
-    fg_color = "#1C1C1C"
-    line_color = "#4C6EF5"
-    primary_color = "#1F3A5F"
+bg_color = "#F6F8FB"
+plot_bg = "#FFFFFF"
+fg_color = "#1C1C1C"
+line_color = "#4C6EF5"
+primary_color = "#1F3A5F"
+
 # Layout Toggle
 full_width = st.sidebar.checkbox("🌐 Full Width Layout", value=True)
 
