@@ -406,7 +406,7 @@ filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 
 # ==================== TABS ====================
 tab1, tab2, tab3, tab4, tab_portfolio, tab_chat = st.tabs([
-    "📊 Overview", "📈 Trends", "🏆 Performance", "📰 Sentiment", "💼 Portfolio", "🤖 Chat"
+    "📊 Overview", "📈 Trends", "🏆 Performance", "📰 Sentiment","🧭 Strategy 2026", "💼 Portfolio", "🤖 Chat"
 ])
 
 # TAB 1: OVERVIEW - ENHANCED WITH CARDS
@@ -576,6 +576,107 @@ with tab4:
             st.info(f"⚖️ Overall: Neutral ({avg:+.2f})")
     except:
         st.warning("📰 News temporarily unavailable. Check connection.")
+
+# ==================== TAB: STRATEGY 2026 ====================
+with tab_strategy:
+    st.header("🧭 Portfolio Strategy — 2026 Vision")
+
+    st.markdown("""
+    This section represents our **forward-looking portfolio construction philosophy**.
+    It is **not performance-based**, but a **strategic allocation framework** designed
+    for long-term wealth creation.
+    """)
+
+    # Target allocation (hard-coded mandate)
+    strategy_data = pd.DataFrame({
+        "Market Cap Segment": [
+            "Mega & Large Cap",
+            "Mid Cap",
+            "Small Cap",
+            "Micro Cap"
+        ],
+        "Target Allocation (%)": [25, 20, 40, 15]
+    })
+
+    col1, col2 = st.columns([2, 3])
+
+    # ---- PIE CHART ----
+    with col1:
+        fig = px.pie(
+            strategy_data,
+            names="Market Cap Segment",
+            values="Target Allocation (%)",
+            hole=0.55,
+            color_discrete_sequence=[
+                "#1F3A5F",  # Navy (Large)
+                "#4C6EF5",  # Blue (Mid)
+                "#2FB344",  # Green (Small)
+                "#ADB5BD"   # Grey (Micro)
+            ]
+        )
+        fig.update_layout(
+            showlegend=True,
+            paper_bgcolor=plot_bg,
+            plot_bgcolor=plot_bg,
+            font_color=fg_color
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    # ---- EXPLANATION ----
+    with col2:
+        st.subheader("📌 Allocation Rationale")
+
+        st.markdown("""
+        **Mega & Large Cap (25%)**  
+        → Stability, governance quality, downside protection  
+
+        **Mid Cap (20%)**  
+        → Earnings acceleration, scalable businesses  
+
+        **Small Cap (40%)**  
+        → Primary alpha generation, early growth capture  
+
+        **Micro Cap (15%)**  
+        → Optionality, deep value, asymmetric upside  
+
+        ---
+        📈 **Objective:**  
+        Balance **capital protection** with **aggressive growth**, while maintaining
+        diversification across market-cap cycles.
+        """)
+
+    st.divider()
+
+    # ---- BAR VIEW (EXECUTIVE FRIENDLY) ----
+    st.subheader("📊 Target Allocation Summary")
+
+    bar_fig = px.bar(
+        strategy_data,
+        x="Market Cap Segment",
+        y="Target Allocation (%)",
+        text="Target Allocation (%)",
+        color="Market Cap Segment",
+        color_discrete_sequence=[
+            "#1F3A5F",
+            "#4C6EF5",
+            "#2FB344",
+            "#ADB5BD"
+        ]
+    )
+    bar_fig.update_traces(texttemplate='%{text}%', textposition='outside')
+    bar_fig.update_layout(
+        showlegend=False,
+        paper_bgcolor=plot_bg,
+        plot_bgcolor=plot_bg,
+        font_color=fg_color,
+        yaxis_title="Allocation (%)",
+        xaxis_title=""
+    )
+
+    st.plotly_chart(bar_fig, use_container_width=True)
+
+    st.info("🧠 This allocation acts as a **strategic compass**, not a short-term trading model.")
+
 
 # TAB 5: PORTFOLIO P&L - ENHANCED WITH CHART
 with tab_portfolio:
