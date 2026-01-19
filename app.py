@@ -263,7 +263,7 @@ for w in st.session_state.watchlist:
 
 # Enhanced Themes with Better Presets
 theme_presets = st.sidebar.selectbox("🎨 Theme Preset", ["Dark Nebula", "Light Aurora", "Bullish Forest", "Bearish Crimson"])
-  theme_presets == "Dark Nebula":
+theme_presets == "Dark Nebula":
     bg_color = "#F6F8FB"
     plot_bg = "#FFFFFF"
     fg_color = "#1C1C1C"
