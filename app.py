@@ -405,8 +405,9 @@ elif period == "Last 1 Year":
 filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 
 # ==================== TABS ====================
-tab1, tab2, tab3, tab4, tab_portfolio, tab_chat = st.tabs([
-    "📊 Overview", "📈 Trends", "🏆 Performance", "📰 Sentiment","🧭 Strategy 2026", "💼 Portfolio", "🤖 Chat"
+tab1, tab2, tab3, tab4, tab_strategy, tab_portfolio, tab_chat = st.tabs([
+    "📊 Overview", "📈 Trends", "🏆 Performance", "📰 Sentiment",
+    "🧭 Strategy 2026", "💼 Portfolio", "🤖 Chat"
 ])
 
 # TAB 1: OVERVIEW - ENHANCED WITH CARDS
