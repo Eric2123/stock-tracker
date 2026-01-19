@@ -350,7 +350,7 @@ def process_data(df):
     return final_df
 
 with st.spinner("🔄 Processing your stocks... Hold on for advanced insights!"):
-    df = process_data(uploaded_file)
+   df = process_data(MASTER_DF)
 st.success(f"✅ Processed {len(df)} stocks for {st.session_state.user}!")
 
 # New Feature: Quick Export to PDF (simulated via download)
