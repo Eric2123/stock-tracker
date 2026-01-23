@@ -529,7 +529,42 @@ with tab2:
 # TAB 3: PERFORMANCE - ENHANCED HEATMAP
 with tab3:
     st.header("🏆 Performance Analysis")
-    st.bar_chart(filtered.set_index("Company Name")["Percent Change"].sort_values(ascending=False))
+# ----- CONDITIONAL COLOR PERFORMANCE BAR CHART -----
+perf_df = (
+    filtered[["Company Name", "Percent Change"]]
+    .sort_values("Percent Change", ascending=False)
+)
+
+perf_df["Color"] = np.where(
+    perf_df["Percent Change"] >= 0,
+    "#4C6EF5",   # BLUE for positive
+    "#F44336"    # RED for negative
+)
+
+fig_perf = go.Figure(
+    data=[
+        go.Bar(
+            x=perf_df["Company Name"],
+            y=perf_df["Percent Change"],
+            marker_color=perf_df["Color"],
+            text=[f"{v:+.2f}%" for v in perf_df["Percent Change"]],
+            textposition="outside"
+        )
+    ]
+)
+
+fig_perf.update_layout(
+    title="📊 Performance vs Record Price",
+    paper_bgcolor=plot_bg,
+    plot_bgcolor=plot_bg,
+    font_color=fg_color,
+    xaxis_title="Company",
+    yaxis_title="% Change from Record Price",
+    xaxis_tickangle=-45,
+    showlegend=False
+)
+
+st.plotly_chart(fig_perf, use_container_width=True)
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("🔥 Top 5 Gainers")
