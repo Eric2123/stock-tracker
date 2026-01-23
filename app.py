@@ -529,7 +529,7 @@ with tab2:
 # TAB 3: PERFORMANCE - ENHANCED HEATMAP
 with tab3:
     st.header("🏆 Performance Analysis")
-# ----- CONDITIONAL COLOR PERFORMANCE BAR CHART -----
+    # ----- CONDITIONAL COLOR PERFORMANCE BAR CHART -----
 perf_df = (
     filtered[["Company Name", "Percent Change"]]
     .sort_values("Percent Change", ascending=False)
@@ -565,7 +565,8 @@ fig_perf.update_layout(
 )
 
 st.plotly_chart(fig_perf, use_container_width=True)
-    col1, col2 = st.columns(2)
+
+col1, col2 = st.columns(2)
     with col1:
         st.subheader("🔥 Top 5 Gainers")
         st.dataframe(filtered.nlargest(5, "Percent Change")[["Company Name", "Percent Change"]], use_container_width=True)
