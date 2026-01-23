@@ -575,7 +575,7 @@ fig_perf.add_hline(
 
 st.plotly_chart(fig_perf, use_container_width=True)
     # ----- EXISTING CONTENT (KEEP THIS) -----
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
 
     with col1:
         st.subheader("🔥 Top 5 Gainers")
