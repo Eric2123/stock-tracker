@@ -528,31 +528,31 @@ with tab2:
 
 # TAB 3: PERFORMANCE - ENHANCED HEATMAP
 # ==================== TAB 3: PERFORMANCE ====================
-# ----- PERFORMANCE BAR CHART (CLEAN UI, ORDER LOCKED) -----
+with tab3:
+    st.header("🏆 Performance Analysis")
+
+    # ----- PERFORMANCE BAR CHART (ORDER LOCKED, CLEAN LABELS) -----
     perf_df = filtered[["Company Name", "Percent Change"]].reset_index(drop=True)
-    
-    # Shorten company names for x-axis
+
     perf_df["Short Name"] = perf_df["Company Name"].apply(
         lambda x: x[:14] + "..." if len(x) > 14 else x
     )
-    
+
     colors = [
         "#4C6EF5" if v >= 0 else "#F44336"
         for v in perf_df["Percent Change"]
     ]
-    
+
     fig_perf = go.Figure(
         go.Bar(
             x=perf_df["Short Name"],
             y=perf_df["Percent Change"],
             marker_color=colors,
-            hovertemplate=
-            "<b>%{customdata}</b><br>" +
-            "% Change: %{y:.2f}%<extra></extra>",
-            customdata=perf_df["Company Name"]  # full name on hover
+            customdata=perf_df["Company Name"],
+            hovertemplate="<b>%{customdata}</b><br>% Change: %{y:.2f}%<extra></extra>"
         )
     )
-    
+
     fig_perf.update_layout(
         title="Performance vs Record Price",
         paper_bgcolor=plot_bg,
@@ -567,15 +567,16 @@ with tab2:
         yaxis_title="% Change from Record Price",
         showlegend=False
     )
-    
+
     fig_perf.add_hline(
         y=0,
         line_dash="dash",
         line_color="#9CA3AF"
-)
+    )
+
     st.plotly_chart(fig_perf, use_container_width=True)
 
-    # ----- TOP / BOTTOM TABLES -----
+    # ----- TABLES -----
     col1, col2 = st.columns(2)
 
     with col1:
