@@ -534,42 +534,46 @@ with tab3:
     st.header("🏆 Performance Analysis")
 
     # ----- CONDITIONAL COLOR PERFORMANCE BAR CHART -----
-    perf_df = (
-        filtered[["Company Name", "Percent Change"]]
-        .sort_values("Percent Change", ascending=False)
+    # ----- PERFORMANCE BAR CHART (ORDER LOCKED 100%) -----
+perf_df = filtered[["Company Name", "Percent Change"]].reset_index(drop=True)
+
+colors = [
+    "#4C6EF5" if v >= 0 else "#F44336"
+    for v in perf_df["Percent Change"]
+]
+
+fig_perf = go.Figure(
+    go.Bar(
+        x=perf_df["Company Name"],
+        y=perf_df["Percent Change"],
+        marker_color=colors,
+        text=[f"{v:+.2f}%" for v in perf_df["Percent Change"]],
+        textposition="outside"
     )
+)
 
-    perf_df["Color"] = np.where(
-        perf_df["Percent Change"] >= 0,
-        "#4C6EF5",   # Blue = Above Record Price
-        "#F44336"    # Red = Below Record Price
-    )
+fig_perf.update_layout(
+    title="Performance vs Record Price",
+    paper_bgcolor=plot_bg,
+    plot_bgcolor=plot_bg,
+    font_color=fg_color,
+    xaxis=dict(
+        title="Company",
+        tickangle=-60,
+        categoryorder="array",                     # 🔒 CRITICAL
+        categoryarray=perf_df["Company Name"]      # 🔒 ORDER LOCK
+    ),
+    yaxis_title="% Change from Record Price",
+    showlegend=False
+)
 
-    fig_perf = go.Figure(
-        data=[
-            go.Bar(
-                x=perf_df["Company Name"],
-                y=perf_df["Percent Change"],
-                marker_color=perf_df["Color"],
-                text=[f"{v:+.2f}%" for v in perf_df["Percent Change"]],
-                textposition="outside"
-            )
-        ]
-    )
+fig_perf.add_hline(
+    y=0,
+    line_dash="dash",
+    line_color="#9CA3AF"
+)
 
-    fig_perf.update_layout(
-        title="📊 Performance vs Record Price",
-        paper_bgcolor=plot_bg,
-        plot_bgcolor=plot_bg,
-        font_color=fg_color,
-        xaxis_title="Company",
-        yaxis_title="% Change from Record Price",
-        xaxis_tickangle=-45,
-        showlegend=False
-    )
-
-    st.plotly_chart(fig_perf, use_container_width=True)
-
+st.plotly_chart(fig_perf, use_container_width=True)
     # ----- EXISTING CONTENT (KEEP THIS) -----
     col1, col2 = st.columns(2)
 
