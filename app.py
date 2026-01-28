@@ -16,6 +16,9 @@ import base64
 from io import BytesIO
 from sklearn.linear_model import LinearRegression
 import streamlit.components.v1 as components  # For custom HTML/JS if needed
+import smtplib
+from email.mime.text import MIMEText
+import os
 
 # ==================== HARD-CODED STOCK MASTER ====================
 STOCK_MASTER = [
@@ -78,6 +81,76 @@ STOCK_MASTER = [
     {"Date of Publishing":"15-01-2026","Company Name":"Jupiter Life Line Hospitals Ltd","Ticker":"JLHL.BO","Index":"SmallCap","Record Price":1366,"Target Price":1650},
     {"Date of Publishing":"18-01-2026","Company Name":"AGI Greenpac Ltd (Rework)","Ticker":"AGI.BO","Index":"Microcap","Record Price":670,"Target Price":812.5}
 ]
+# ==================== EMAIL ALERT CONFIG ====================
+EMAIL_SENDER = "loboe173@gmail.com"
+EMAIL_PASSWORD = "xctm ziaq azmo dviq"
+ALERT_EMAILS = ["eric.l@qualscore.in"]
+ALERT_LOG_FILE = "email_alert_log.csv"
+def send_email(subject, body):
+    msg = MIMEText(body)
+    msg["From"] = EMAIL_SENDER
+    msg["To"] = ", ".join(ALERT_EMAILS)
+    msg["Subject"] = subject
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, ALERT_EMAILS, msg.as_string())
+
+
+def load_alert_log():
+    if os.path.exists(ALERT_LOG_FILE):
+        return pd.read_csv(ALERT_LOG_FILE)
+    return pd.DataFrame(columns=["Ticker", "Alert"])
+
+
+def alert_already_sent(ticker, alert):
+    log = load_alert_log()
+    return ((log["Ticker"] == ticker) & (log["Alert"] == alert)).any()
+
+
+def save_alert(ticker, alert):
+    log = load_alert_log()
+    log.loc[len(log)] = [ticker, alert]
+    log.to_csv(ALERT_LOG_FILE, index=False)
+
+
+def run_email_alerts(df):
+    for _, row in df.iterrows():
+        price = row["Current Price"]
+        target = row["target Price"]
+        ticker = row["Ticker"]
+        company = row["Company Name"]
+
+        conditions = {
+            "15% BELOW TARGET": price <= target * 0.85,
+            "5% BELOW TARGET": price <= target * 0.95,
+            "TARGET HIT": price >= target,
+            "5% ABOVE TARGET": price >= target * 1.05,
+        }
+
+        for alert, hit in conditions.items():
+            if hit and not alert_already_sent(ticker, alert):
+                subject = f"🚨 QUALSCORE ALERT — {alert}"
+                body = f"""
+Stock: {company}
+Ticker: {ticker}
+
+Current Price: ₹{price:.2f}
+Target Price: ₹{target:.2f}
+
+Alert Triggered: {alert}
+
+— QualSCORE Automated Alert System
+"""
+                send_email(subject, body)
+                save_alert(ticker, alert)
+st.success(f"✅ Processed {len(df)} stocks for {st.session_state.user}!")
+# ==================== RUN EMAIL ALERTS ====================
+run_email_alerts(df)
+
+                
+
 
 @st.cache_data
 def load_master_data():
