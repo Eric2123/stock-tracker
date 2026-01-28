@@ -20,6 +20,65 @@ import smtplib
 from email.mime.text import MIMEText
 import os
 
+   def send_email(subject, body):
+        msg = MIMEText(body)
+        msg["From"] = EMAIL_SENDER
+        msg["To"] = ", ".join(ALERT_EMAILS)
+        msg["Subject"] = subject
+    
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_SENDER, ALERT_EMAILS, msg.as_string())
+    
+    
+    def load_alert_log():
+        if os.path.exists(ALERT_LOG_FILE):
+            return pd.read_csv(ALERT_LOG_FILE)
+    return pd.DataFrame(columns=["Ticker", "Alert"])
+
+
+def alert_already_sent(ticker, alert):
+    log = load_alert_log()
+    return ((log["Ticker"] == ticker) & (log["Alert"] == alert)).any()
+
+
+def save_alert(ticker, alert):
+    log = load_alert_log()
+    log.loc[len(log)] = [ticker, alert]
+    log.to_csv(ALERT_LOG_FILE, index=False)
+
+# ==================== RUN EMAIL ALERTS (SAFE) ====================
+if "df" in locals() and not df.empty:
+    run_email_alerts(df)
+    for _, row in df.iterrows():
+        price = row["Current Price"]
+        target = row["target Price"]
+        ticker = row["Ticker"]
+        company = row["Company Name"]
+
+        conditions = {
+            "15% BELOW TARGET": price <= target * 0.85,
+            "5% BELOW TARGET": price <= target * 0.95,
+            "TARGET HIT": price >= target,
+            "5% ABOVE TARGET": price >= target * 1.05,
+        }
+
+        for alert, hit in conditions.items():
+            if hit and not alert_already_sent(ticker, alert):
+                subject = f"🚨 QUALSCORE ALERT — {alert}"
+                body = f"""
+Stock: {company}
+Ticker: {ticker}
+
+Current Price: ₹{price:.2f}
+Target Price: ₹{target:.2f}
+
+Alert Triggered: {alert}
+
+— QualSCORE Automated Alert System
+"""
+
 # ==================== HARD-CODED STOCK MASTER ====================
 STOCK_MASTER = [
     {"Date of Publishing":"10-05-2024","Company Name":"Thomas Cook (India) Ltd","Ticker":"THOMASCOOK.BO","Index":"Microcap","Record Price":201,"Target Price":316},
@@ -86,64 +145,7 @@ EMAIL_SENDER = "loboe173@gmail.com"
 EMAIL_PASSWORD = "xctm ziaq azmo dviq"
 ALERT_EMAILS = ["eric.l@qualscore.in"]
 ALERT_LOG_FILE = "email_alert_log.csv"
-def send_email(subject, body):
-    msg = MIMEText(body)
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = ", ".join(ALERT_EMAILS)
-    msg["Subject"] = subject
-
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_SENDER, ALERT_EMAILS, msg.as_string())
-
-
-def load_alert_log():
-    if os.path.exists(ALERT_LOG_FILE):
-        return pd.read_csv(ALERT_LOG_FILE)
-    return pd.DataFrame(columns=["Ticker", "Alert"])
-
-
-def alert_already_sent(ticker, alert):
-    log = load_alert_log()
-    return ((log["Ticker"] == ticker) & (log["Alert"] == alert)).any()
-
-
-def save_alert(ticker, alert):
-    log = load_alert_log()
-    log.loc[len(log)] = [ticker, alert]
-    log.to_csv(ALERT_LOG_FILE, index=False)
-
-# ==================== RUN EMAIL ALERTS (SAFE) ====================
-if "df" in locals() and not df.empty:
-    run_email_alerts(df)
-    for _, row in df.iterrows():
-        price = row["Current Price"]
-        target = row["target Price"]
-        ticker = row["Ticker"]
-        company = row["Company Name"]
-
-        conditions = {
-            "15% BELOW TARGET": price <= target * 0.85,
-            "5% BELOW TARGET": price <= target * 0.95,
-            "TARGET HIT": price >= target,
-            "5% ABOVE TARGET": price >= target * 1.05,
-        }
-
-        for alert, hit in conditions.items():
-            if hit and not alert_already_sent(ticker, alert):
-                subject = f"🚨 QUALSCORE ALERT — {alert}"
-                body = f"""
-Stock: {company}
-Ticker: {ticker}
-
-Current Price: ₹{price:.2f}
-Target Price: ₹{target:.2f}
-
-Alert Triggered: {alert}
-
-— QualSCORE Automated Alert System
-"""
+ 
                 send_email(subject, body)
                 save_alert(ticker, alert)
 # ==================== RUN EMAIL ALERTS ====================
