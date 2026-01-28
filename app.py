@@ -145,7 +145,6 @@ Alert Triggered: {alert}
 """
                 send_email(subject, body)
                 save_alert(ticker, alert)
-st.success(f"✅ Processed {len(df)} stocks for {st.session_state.user}!")
 # ==================== RUN EMAIL ALERTS ====================
 run_email_alerts(df)
 
@@ -453,6 +452,11 @@ def process_data(df):
 
 with st.spinner("🔄 Processing your stocks... Hold on for advanced insights!"):
     df = process_data(MASTER_DF)
+st.success(f"✅ Processed {len(df)} stocks for {st.session_state.user}!")
+
+# ==================== RUN EMAIL ALERTS ====================
+run_email_alerts(df)
+
 st.success(f"✅ Processed {len(df)} stocks for {st.session_state.user}!")
 
 # New Feature: Quick Export to PDF (simulated via download)
