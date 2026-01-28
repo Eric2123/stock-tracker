@@ -114,8 +114,9 @@ def save_alert(ticker, alert):
     log.loc[len(log)] = [ticker, alert]
     log.to_csv(ALERT_LOG_FILE, index=False)
 
-
-def run_email_alerts(df):
+# ==================== RUN EMAIL ALERTS (SAFE) ====================
+if "df" in locals() and not df.empty:
+    run_email_alerts(df)
     for _, row in df.iterrows():
         price = row["Current Price"]
         target = row["target Price"]
