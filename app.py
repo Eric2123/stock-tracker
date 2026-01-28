@@ -74,23 +74,18 @@ def run_email_alerts(df):
         current = row["Current Price"]
         target = row["target Price"]
 
-        levels = {
+        alert_levels = {
             "15% Below Target": target * 0.85,
             "5% Below Target": target * 0.95,
             "Target Hit": target,
             "5% Above Target": target * 1.05,
         }
 
-        for label, price_level in levels.items():
+        for label, level_price in alert_levels.items():
             alert_key = f"{ticker}-{label}"
 
-            condition = (
-                current >= price_level
-                if "Above" in label or "Target Hit" in label
-                else current <= price_level
-            )
-
-            if condition and alert_log.get(alert_key) != True:
+            # 🔥 CORRECT CONDITION
+            if current >= level_price and not alert_log.get(alert_key, False):
                 subject = f"QUALSCORE ALERT: {company} – {label}"
                 body = f"""
 Company: {company}
@@ -100,6 +95,7 @@ Current Price: ₹{current}
 Target Price: ₹{target}
 
 Alert Triggered: {label}
+Trigger Level: ₹{round(level_price, 2)}
 Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
                 send_email(subject, body)
