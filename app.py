@@ -160,6 +160,8 @@ def load_master_data():
 
 MASTER_DF = load_master_data()
 
+# ==================== SAFE DF INITIALIZATION ====================
+df = MASTER_DF.copy()
 
 # ==================== PREMIUM FINTECH UI THEME ====================
 st.markdown("""
