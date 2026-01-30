@@ -66,16 +66,12 @@ STOCK_MASTER = [
     {"Date of Publishing":"31-08-2025","Company Name":"Geojit Financial Services Ltd","Ticker":"GEOJITFSL.BO","Index":"Microcap","Record Price":71.3,"Target Price":218},
     {"Date of Publishing":"31-08-2025","Company Name":"Indian Energy Exchange Ltd","Ticker":"IEX.BO","Index":"SmallCap","Record Price":140,"Target Price":215},
     {"Date of Publishing":"01-09-2025","Company Name":"Tata Consultancy Services Ltd","Ticker":"TCS.BO","Index":"Mega Cap","Record Price":3110,"Target Price":3900},
-    {"Date of Publishing":"04-09-2025","Company Name":"Eicher Motors Ltd","Ticker":"EICHERMOT.BO","Index":"Large Cap","Record Price":6435,"Target Price":8085},
     {"Date of Publishing":"01-10-2025","Company Name":"Vikram Solar","Ticker":"VIKRAMSOLR.BO","Index":"SmallCap","Record Price":316,"Target Price":563},
     {"Date of Publishing":"15-10-2025","Company Name":"MPS Ltd","Ticker":"MPSLTD.BO","Index":"Microcap","Record Price":2248,"Target Price":2996},
     {"Date of Publishing":"28-10-2025","Company Name":"Jindal Stainless","Ticker":"JSL.BO","Index":"Midcap","Record Price":803,"Target Price":975},
     {"Date of Publishing":"06-11-2025","Company Name":"D-Link India Ltd","Ticker":"DLINKINDIA.BO","Index":"Microcap","Record Price":445,"Target Price":735},
     {"Date of Publishing":"06-11-2025","Company Name":"Mallcom India Ltd","Ticker":"MALLCOM.BO","Index":"Microcap","Record Price":1436,"Target Price":2500},
     {"Date of Publishing":"10-01-2026","Company Name":"Brookfield India Real Estate Trust","Ticker":"BIRET.BO","Index":"Midcap","Record Price":334,"Target Price":425},
-    {"Date of Publishing":"10-01-2026","Company Name":"Mindspace Business Parks REIT","Ticker":"MINDSPACE.BO","Index":"Midcap","Record Price":490,"Target Price":500},
-    {"Date of Publishing":"10-01-2026","Company Name":"Embassy Office Parks REIT","Ticker":"EMBASSY.BO","Index":"Midcap","Record Price":439,"Target Price":460},
-    {"Date of Publishing":"10-01-2026","Company Name":"Nexus Select Trust","Ticker":"NXST.BO","Index":"SmallCap","Record Price":160,"Target Price":175},
     {"Date of Publishing":"15-01-2026","Company Name":"Jupiter Life Line Hospitals Ltd","Ticker":"JLHL.BO","Index":"SmallCap","Record Price":1366,"Target Price":1650},
     {"Date of Publishing":"18-01-2026","Company Name":"AGI Greenpac Ltd (Rework)","Ticker":"AGI.BO","Index":"Microcap","Record Price":670,"Target Price":812.5}
 ]
