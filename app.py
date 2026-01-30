@@ -1,5 +1,5 @@
-# app.py - ADVANCED UI/UX QUALSCORE EDITION - ENHANCED AESTHETICS + NEW FEATURES
 
+# app.py - ADVANCED UI/UX QUALSCORE EDITION - ENHANCED AESTHETICS + NEW FEATURES
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -16,158 +16,7 @@ import time
 import base64
 from io import BytesIO
 from sklearn.linear_model import LinearRegression
-import streamlit.components.v1 as components
-
-# ==================== EMAIL ALERT CONFIG ====================
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import json
-import os
-
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-
-EMAIL_SENDER = "loboe173@gmail.com"
-EMAIL_PASSWORD = "xctm ziaq azmo dviq"
-EMAIL_RECEIVERS = ["eric.l@qualscore.in"]
-
-ALERT_LOG_FILE = "alert_log.json"
-
-
-# ==================== EMAIL ALERT FUNCTIONS ====================
-def send_email(subject, body):
-    try:
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_SENDER
-        msg["To"] = ", ".join(EMAIL_RECEIVERS)
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
-
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_SENDER, EMAIL_RECEIVERS, msg.as_string())
-        server.quit()
-    except Exception as e:
-        print("Email error:", e)
-
-
-def load_alert_log():
-    if os.path.exists(ALERT_LOG_FILE):
-        with open(ALERT_LOG_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-
-def save_alert_log(data):
-    with open(ALERT_LOG_FILE, "w") as f:
-        json.dump(data, f)
-
-
-def run_email_alerts(df):
-    alert_log = load_alert_log()
-
-    for _, row in df.iterrows():
-        company = row["Company Name"]
-        ticker = row["Ticker"]
-        current = row["Current Price"]
-        target = row["target Price"]
-
-        alert_levels = {
-            "15% Below Target": target * 0.85,
-            "5% Below Target": target * 0.95,
-            "Target Hit": target,
-            "5% Above Target": target * 1.05,
-        }
-
-        for label, level_price in alert_levels.items():
-            alert_key = f"{ticker}-{label}"
-
-            # 🔥 CORRECT CONDITION
-            if current >= level_price and not alert_log.get(alert_key, False):
-                subject = f"QUALSCORE ALERT: {company} – {label}"
-                body = f"""
-Company: {company}
-Ticker: {ticker}
-
-Current Price: ₹{current}
-Target Price: ₹{target}
-
-Alert Triggered: {label}
-Trigger Level: ₹{round(level_price, 2)}
-Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-"""
-                send_email(subject, body)
-                alert_log[alert_key] = True
-
-    save_alert_log(alert_log)
-
-
-# ==================== HARD-CODED STOCK MASTER ====================
-# (UNCHANGED – exactly as you sent)
-STOCK_MASTER = [
-    {"Date of Publishing":"10-05-2024","Company Name":"Thomas Cook (India) Ltd","Ticker":"THOMASCOOK.BO","Index":"Microcap","Record Price":201,"Target Price":316},
-    {"Date of Publishing":"20-05-2024","Company Name":"SBI Cards & Payment Services Ltd","Ticker":"SBICARD.BO","Index":"Large Cap","Record Price":715,"Target Price":1094},
-    {"Date of Publishing":"31-05-2024","Company Name":"Va Tech Wabag Ltd","Ticker":"WABAG.BO","Index":"SmallCap","Record Price":980,"Target Price":1413},
-    # ⬇️ ALL OTHER STOCKS UNCHANGED ⬇️
-]
-
-@st.cache_data
-def load_master_data():
-    df = pd.DataFrame(STOCK_MASTER)
-    df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True)
-    return df
-
-MASTER_DF = load_master_data()
-
-# ==================== PASSWORD PROTECTION ====================
-st.set_page_config(page_title="QualSCORE", page_icon="📈", layout="wide")
-
-password = st.text_input("Password", type="password")
-if password != "admin":
-    st.stop()
-
-# ==================== DATA PROCESSING ====================
-@st.cache_data(show_spinner=False)
-def process_data(df):
-    results = []
-    for _, row in df.iterrows():
-        try:
-            current = yf.Ticker(row["Ticker"]).history(period="1d")["Close"].iloc[-1]
-            results.append({
-                "Company Name": row["Company Name"],
-                "Ticker": row["Ticker"],
-                "Record Price": row["Record Price"],
-                "Current Price": round(current, 2),
-                "target Price": row["Target Price"],
-                "Date of Publishing": row["Date of Publishing"]
-            })
-        except:
-            pass
-
-    final_df = pd.DataFrame(results)
-    final_df["Percent Change"] = (
-        (final_df["Current Price"] - final_df["Record Price"])
-        / final_df["Record Price"] * 100
-    ).round(2)
-    return final_df
-
-
-df = process_data(MASTER_DF)
-
-# ==================== RUN EMAIL ALERTS (SAFE POSITION) ====================
-if not df.empty:
-    run_email_alerts(df)
-
-st.success(f"✅ Processed {len(df)} stocks successfully")
-
-# ==================== REST OF YOUR DASHBOARD ====================
-st.dataframe(df, use_container_width=True)
-
-st.sidebar.success("🚀 QUALSCORE ACTIVE")
-st.markdown(f"© 2025 QualSCORE | Last Update: {datetime.now().strftime('%Y-%m-%d')}")
-
+import streamlit.components.v1 as components  # For custom HTML/JS if needed
 
 # ==================== HARD-CODED STOCK MASTER ====================
 STOCK_MASTER = [
@@ -380,9 +229,9 @@ Equity research internal stock dashboard
 """, unsafe_allow_html=True)
 
 # ==================== USER + WATCHLIST + SEARCH FEATURE ====================
-if 'user' not in st.session_state: 
+if 'user' not in st.session_state:
     st.session_state.user = "Elite Trader"
-if 'watchlist' not in st.session_state: 
+if 'watchlist' not in st.session_state:
     st.session_state.watchlist = []
 user = st.sidebar.text_input("👤 Your Name", value=st.session_state.user)
 if user != st.session_state.user:
@@ -438,7 +287,7 @@ def get_indices():
         n = yf.Ticker("^NSEI").history(period="1d")["Close"].iloc[-1]
         s = yf.Ticker("^BSESN").history(period="1d")["Close"].iloc[-1]
         return round(n, 2), round(s, 2)
-    except: 
+    except:
         return None, None
 
 nifty, sensex = get_indices()
@@ -459,11 +308,11 @@ def process_data(df):
     df = df.copy()
     df.columns = df.columns.str.strip()
     required = ["Company Name", "Ticker", "Record Price", "Target Price", "Date of Publishing"]
-    if "Index" not in df.columns: 
+    if "Index" not in df.columns:
         df["Index"] = "Unknown"
     missing = [c for c in required if c not in df.columns]
-    if missing: 
-        st.error(f"❌ Missing columns: {missing}"); 
+    if missing:
+        st.error(f"❌ Missing columns: {missing}");
         st.stop()
     df["Date of Publishing"] = pd.to_datetime(df["Date of Publishing"], dayfirst=True, errors='coerce')
     df = df.dropna(subset=["Date of Publishing"])
@@ -472,11 +321,11 @@ def process_data(df):
     total = len(df)
     for i, (_, row) in enumerate(df.iterrows()):
         ticker = str(row["Ticker"]).strip()
-        if not ticker.endswith((".BO", ".NS")): 
+        if not ticker.endswith((".BO", ".NS")):
             ticker += ".BO"
         try:
             current = yf.Ticker(ticker).history(period="1d")["Close"].iloc[-1]
-            
+
             # Compute Volatility (std dev of last 30 days returns)
             hist_30d = yf.Ticker(ticker).history(period="1mo")
             if not hist_30d.empty:
@@ -484,7 +333,7 @@ def process_data(df):
                 volatility = returns_30d.std() * np.sqrt(252) * 100  # Annualized
             else:
                 volatility = 0.0
-            
+
             # Compute Beta vs Nifty
             hist_stock = yf.Ticker(ticker).history(period="1y")
             hist_nifty = yf.Ticker("^NSEI").history(period="1y")
@@ -507,7 +356,7 @@ def process_data(df):
                     beta = 1.0
             else:
                 beta = 1.0
-            
+
             results.append({
                 "Company Name": row["Company Name"],
                 "Ticker": ticker,
@@ -519,7 +368,7 @@ def process_data(df):
                 "Volatility (%)": round(volatility, 2),
                 "Beta": round(beta, 2)
             })
-        except: 
+        except:
             continue
         progress_bar.progress((i + 1) / total)
     final_df = pd.DataFrame(results)
@@ -543,16 +392,16 @@ selected_companies = st.sidebar.multiselect(
     "Choose companies", df["Company Name"].unique(),
     default=(st.session_state.watchlist + list(df["Company Name"].head(3).tolist()))[:3]
 )
-if not selected_companies: 
+if not selected_companies:
     selected_companies = df["Company Name"].head(1).tolist()
 
 period = st.sidebar.selectbox("📅 Time Period", ["All Time", "Last 3 Months", "Last 6 Months", "Last 1 Year"])
 cutoff = datetime(1900, 1, 1)
-if period == "Last 3 Months": 
+if period == "Last 3 Months":
     cutoff = datetime.today() - timedelta(days=90)
-elif period == "Last 6 Months": 
+elif period == "Last 6 Months":
     cutoff = datetime.today() - timedelta(days=180)
-elif period == "Last 1 Year": 
+elif period == "Last 1 Year":
     cutoff = datetime.today() - timedelta(days=365)
 filtered = df[pd.to_datetime(df["Date of Publishing"]) >= cutoff]
 
@@ -576,7 +425,7 @@ with tab1:
     with col3:
         top = df.loc[df["Percent Change"].idxmax()]
         st.markdown(f'<div class="metric-card">Top Gainer<br><h2 style="margin:0;">{top["Company Name"]}</h2><p style="margin:0;">{top["Percent Change"]:+.2f}%</p></div>', unsafe_allow_html=True)
-    
+
     # Quick Stats Cards
     with st.expander("⚠️ Quick Risk Stats", expanded=False):
         col_r1, col_r2, col_r3 = st.columns(3)
@@ -589,13 +438,13 @@ with tab1:
         with col_r3:
             high_risk = len(df[df["Volatility (%)"] > 30])
             st.metric("High Risk Stocks", high_risk)
-    
+
     if df["Index"].nunique() > 1:
         fig_pie = px.pie(df["Index"].value_counts().reset_index(), names="Index", values="count", hole=0.4,
                          color_discrete_sequence=px.colors.sequential.Blues)
         fig_pie.update_layout(paper_bgcolor=plot_bg, plot_bgcolor=plot_bg, font_color=fg_color)
         st.plotly_chart(fig_pie, use_container_width=True)
-    
+
     st.subheader("📋 Performance Table")
     disp = filtered[["Company Name", "Current Price", "target Price", "Percent Change", "Distance from Target ($)", "Volatility (%)", "Beta"]]
     styled = disp.style.format({
@@ -783,11 +632,11 @@ with tab4:
                     st.image(item['image'], use_column_width=True)
                 st.write(f"→ **{label}** ({pol:+.2f})")
         avg = np.mean(sentiments)
-        if avg > 0.1: 
+        if avg > 0.1:
             st.success(f"🌟 Overall: Positive ({avg:+.2f})")
-        elif avg < -0.1: 
+        elif avg < -0.1:
             st.error(f"😟 Overall: Negative ({avg:+.2f})")
-        else: 
+        else:
             st.info(f"⚖️ Overall: Neutral ({avg:+.2f})")
     except:
         st.warning("📰 News temporarily unavailable. Check connection.")
@@ -842,20 +691,20 @@ with tab_strategy:
         st.subheader("📌 Allocation Rationale")
 
         st.markdown("""
-        **Mega & Large Cap (25%)**  
-        → Stability, governance quality, downside protection  
+        **Mega & Large Cap (25%)**
+        → Stability, governance quality, downside protection
 
-        **Mid Cap (20%)**  
-        → Earnings acceleration, scalable businesses  
+        **Mid Cap (20%)**
+        → Earnings acceleration, scalable businesses
 
-        **Small Cap (40%)**  
-        → Primary alpha generation, early growth capture  
+        **Small Cap (40%)**
+        → Primary alpha generation, early growth capture
 
-        **Micro Cap (15%)**  
-        → Optionality, deep value, asymmetric upside  
+        **Micro Cap (15%)**
+        → Optionality, deep value, asymmetric upside
 
         ---
-        📈 **Objective:**  
+        📈 **Objective:**
         Balance **capital protection** with **aggressive growth**, while maintaining
         diversification across market-cap cycles.
         """)
